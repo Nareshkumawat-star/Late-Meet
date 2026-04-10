@@ -1,52 +1,94 @@
-# 🕒 Late-Meet: AI Meeting Copilot
+<div align="center">
+  <img src="icons/icon128.png" alt="AI Meeting Copilot Logo" width="120" />
 
-Late-Meet is a high-performance, AI-driven assistant designed to provide real-time meeting intelligence. Say goodbye to the anxiety of joining a meeting late or losing track of the discussion—Late-Meet acts as your silent, personal meeting assistant.
+  # AI Meeting Copilot
 
-> **Note**: Currently, Late-Meet is exclusively designed as a Chrome Extension for **Google Meet**.
+  **Real-time meeting intelligence without the intrusive bots.**  
+  *Never ask "what did I miss?" again.*
 
-## The Problem Statement ⚠️
-Joining a meeting late often leaves participants disconnected and scrambling for context. Forcing the meeting to pause while others catch you up disrupts the flow of the entire team. Existing AI note-takers often act as intrusive bots in the call and might produce massive transcripts that take too much time to read. There is a lack of instant and concise briefings for users who simply want to know: *"What did I miss?"*
+  [![Version](https://img.shields.io/badge/Version-1.0.0-black?style=for-the-badge&logo=googlechrome)](https://github.com/shouri123/Late-Meet)
+  [![License](https://img.shields.io/badge/License-MIT-black?style=for-the-badge)](LICENSE)
+  [![Platform](https://img.shields.io/badge/Platform-Google_Meet-black?style=for-the-badge&logo=googlemeet)](https://meet.google.com)
+</div>
 
-## Our Solution 💡
-Late-Meet solves this by living natively within your browser. Without adding an obnoxious bot to the call, it captures audio locally, translates it to text, and uses AI to generate instant contextual briefings and summaries. The application will post a public message in the chatbox that everyone can see, but it is specifically tailored to brief the late joiner so they can catch up seamlessly.
+<br />
 
-**Important Architecture Requirement:** 
-Late-Meet operates on a peer-to-peer relay architecture. This means the extension **must be installed on both the host's device and the late joiner's device** to function correctly. 
+## 🌟 The Problem
+Joining a meeting late or losing focus for a moment leaves participants disconnected, scrambling for context, and interrupting the flow of the entire team. Existing AI note-takers add an obnoxious "Bot has joined" participant to the call, invade your privacy, and often generate massive, unreadable transcripts rather than punchy, actionable insights.
 
----
+## 💡 Our Solution
+**AI Meeting Copilot** lives entirely natively within your browser. Without adding any disruptive bots to the call, it securely captures audio directly from the Chrome tab, leverages the powerful **OpenAI Whisper & GPT models** to process the conversation, and provides a stunning, high-performance side-panel dashboard.
 
-### Phase 1: The Core Foundation (Current Phase) 🚀
-The initial release focuses on establishing robust and high-performance audio capture and AI insights specifically for Google Meet.
-
-- **Background Audio Capture (Offscreen API)**: Modern architectures utilizing Chrome's Offscreen Documents and `chrome.tabCapture` to reliably intercept meeting audio without disrupting tab activity.
-- **BYOK (Bring Your Own Key) Engine**: The extension relies on a user-provided API key (e.g., OpenAI or any compatible chatbot API) to listen to audio, transcribe it, and power the AI engine to summarize topics, decisions, and actions, giving full context to the late joiner.
-- **Premium Glassmorphism Interface**: A stunning, modern dark theme side-panel dashboard. Built with sleek CSS aesthetics—no clunky popups.
-- **Chatbox Integration**: Automatically sends a public message in the meeting chatbox containing the briefing aimed at the late joiner.
-
-### Phase 2: Platform Expansion & Terminal CLI (Coming Soon) 🔄
-- **NPM Package & Desktop Support**: Transitioning beyond a Chrome Extension into an NPM package runnable directly in your terminal. This will unlock support for offline, native meeting platforms like **Zoom**.
-- **Supabase Realtime Backend**: Transition from local-only storage to live syncing across authorized team members, ensuring late joiners can easily request transcripts.
-- **AI Topic Tracking & Action Items**: Instantly detect and categorize action items (e.g., "Add Jira ticket for..."), tracking the active conversation topic.
-- **Live Translation**: On-the-fly translation bridging language gaps for international teams.
-
-### Phase 3: Enterprise & Scale (Coming Soon) 📈
-- **Speaker Diarization (Who Spoke)**: Advanced voice fingerprinting to accurately partition transcripts by speaker.
-- **Seamless Export Integrations**: Auto-push notes and action items to Slack, Notion, Jira, or Google Docs once the meeting ends.
-- **Analytics Dashboard**: Post-meeting insights—visualize total talk-time per speaker, meeting efficiency rating, and focus areas.
+It tracks live topics, identifies key decisions, itemizes action items, and instantly generates bespoke briefing cards for anyone joining the call late via a secure, peer-to-peer relay architecture.
 
 ---
 
-## 🛠 Project Structure & Technology Stack
-- **Extension Architecture**: Manifest V3 compliant, Offscreen Documents, Service Workers.
-- **Styling**: Vanilla CSS designed with a custom *Dark Glassmorphism* aesthetic.
-- **AI Pipeline**: Relies on user-provided API keys (OpenAI Whisper/GPT or equivalent) to listen, transcribe, and summarize content.
-- **Relay System**: Supabase Realtime (handing host-to-client relay).
+## 🚀 Key Features
 
-## 📦 Installation & Setup (Developer)
-1. Clone this repository: `git clone https://github.com/shouri123/Late-Meet.git`
-2. Open Google Chrome and go to `chrome://extensions/`
-3. Enable **Developer mode** in the top right corner.
-4. Click **Load unpacked** and select the root directory of this extension.
-5. Setup your API keys (OpenAI or another capable chatbot API) in the extension's options page. The AI is responsible for transcribing, summarizing topics, extracting decisions, and tracking actions.
-6. **Ensure the host of the meeting also has the extension installed.**
-7. Join a Google Meet and open the side-panel!
+* **Invisible & Native:** Uses modern Chrome `tabCapture` and Offscreen APIs to intercept audio securely without adding bots to the participant list.
+* **Live Dashboards:** See real-time transcription tracking, topic identification, sentiment analysis, and action items in a beautifully crafted monochrome interface.
+* **Late-Joiner Briefings:** Instantly catches up late participants with targeted, private overlay briefings summarizing what they missed before joining (powered by Supabase Realtime).
+* **Bring Your Own Key (BYOK):** Full control over your data. Supply your own OpenAI API key for transcription and summarization tasks.
+* **Premium Interface:** A visually striking deep-monochrome UI with glassmorphism effects, smooth animations, and zero clutter. 
+
+---
+
+## 🛠 Technology Stack
+
+* **Extension Architecture:** Manifest V3 compliant, Offscreen Documents, Service Workers.
+* **Design System:** Custom Vanila CSS, high-contrast monochrome aesthetic, SVG-native iconography (Lucide).
+* **AI Pipeline:** OpenAI Whisper (Transcription) and GPT-4 (Summarization/Intelligence).
+* **Relay Infrastructure:** Supabase Realtime (Handles host-to-client briefing synchronization).
+
+---
+
+## ⚙️ Installation & Setup (Developer Mode)
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/shouri123/Late-Meet.git
+   cd Late-Meet
+   ```
+2. **Load into Chrome:**
+   - Open Google Chrome and navigate to `chrome://extensions/`.
+   - Enable **Developer mode** in the top right corner.
+   - Click **Load unpacked** and select the root directory of this extension.
+3. **Configure the Copilot:**
+   - Click the extension icon in the toolbar.
+   - Enter your **OpenAI API Key** (required for transcription and intelligence).
+   - Enter your **Supabase URL & Anon Key** (required for the Late-Joiner brief feature).
+4. **Join a Meeting:**
+   - Join any active Google Meet.
+   - Click **Start Copilot** from the extension popup.
+   - Open the full Side Panel dashboard to view live intelligence!
+
+> **Important Architecture Note:** The Late-Joiner briefing feature operates on a peer-to-peer relay. For it to function, the "host" (someone already in the meeting) must be running the Copilot to capture and push the context, and the "joiner" must have the extension installed to receive the synchronized brief.
+
+---
+
+## 🗺 Roadmap
+
+### Phase 1: Core Foundation ✅
+- Native Google Meet integration without bot participants.
+- Real-time offline audio capture via Chrome Offscreen APIs.
+- Premium monochrome UI extension & side panel.
+- BYOK integration for processing.
+
+### Phase 2: Platform Expansion 🔄 *(Coming Soon)*
+- **Offline/Native Support:** Transition to an NPM package / Terminal CLI to support desktop apps like Zoom and Microsoft Teams.
+- **Smart Tracking:** Enhanced detection for action item assignee routing based on voice mapping.
+- **On-the-fly Translation:** Bridging language gaps during international calls.
+
+### Phase 3: Enterprise & Scale 📈 *(Planned)*
+- **Speaker Diarization:** Advanced voice fingerprinting to accurately partition transcripts by speaker.
+- **Seamless Integrations:** Auto-push notes and action items to Slack, Notion, Jira, or Google Docs post-meeting.
+
+---
+
+## 📜 License
+Distributed under the MIT License. See `LICENSE` for more information.
+
+<div align="center">
+  <br />
+  <i>Built for high-performance teams who value focus.</i>
+</div>
