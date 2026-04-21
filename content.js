@@ -10,7 +10,8 @@
     chatInput: [
       'textarea[aria-label="Chat text input"]',
       'textarea[name="chatTextInput"]',
-      'div[contenteditable="true"][aria-label*="message"]'
+      'div[contenteditable="true"][aria-label*="message"]',
+      'textarea[placeholder*="message"]'
     ],
     sendButton: [
       'button[aria-label="Send message"]',
@@ -45,14 +46,22 @@
   }
 
   function setInputValue(el, value) {
-    if ('value' in el) {
-      el.value = value;
-    } else {
-      el.textContent = value;
+    el.focus();
+    try {
+      // Use execCommand for high-fidelity text insertion (triggers React state)
+      document.execCommand('selectAll', false, null);
+      document.execCommand('insertText', false, value);
+    } catch (e) {
+      console.warn(`${COPILOT_PREFIX} execCommand failed, falling back to property set`, e);
+      if ('value' in el) {
+        el.value = value;
+      } else {
+        el.textContent = value;
+      }
     }
-
-    el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-    el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+    
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   async function wait(ms) {
@@ -75,7 +84,8 @@
     const chatToggle = queryFirst(SELECTORS.chatToggleButtons);
     if (chatToggle) {
       chatToggle.click();
-      return findChatInputWithRetry(8);
+      await wait(500); // Give panel time to mount
+      return findChatInputWithRetry(10);
     }
 
     return null;
