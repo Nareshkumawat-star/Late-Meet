@@ -155,7 +155,14 @@ async function closeOffscreenDocumentIfPresent() {
   }
 }
 
-async function transcribeChunk(base64Audio, mimeType = 'audio/webm') {
+function getTranscriptionPrompt() {
+  const recentTexts = state.transcript.slice(-3).map(e => e.text).join(' ');
+  if (!recentTexts) return '';
+  // Provide last ~200 characters to Whisper to help with context/names
+  return recentTexts.slice(-200);
+}
+
+async function transcribeChunk(base64Audio, mimeType = 'audio/webm', prompt = '') {
   const apiKey = await getApiKey();
   if (!apiKey) return null;
 
@@ -173,6 +180,9 @@ async function transcribeChunk(base64Audio, mimeType = 'audio/webm') {
   formData.append('file', blob, `audio.${extension}`);
   formData.append('model', 'whisper-1');
   formData.append('response_format', 'verbose_json');
+  if (prompt) {
+    formData.append('prompt', prompt);
+  }
 
   const response = await fetch(OPENAI_WHISPER_URL, {
     method: 'POST',
@@ -209,7 +219,39 @@ async function summarizeTranscriptIfNeeded() {
     .join('\n');
   if (!transcriptWindow.trim()) return;
 
-  const userPrompt = `Analyze this transcript and return strict JSON with fields summary, topics, decisions, actionItems, currentTopic, sentiment, keyInsights, questionsRaised.\n\nPrevious summary: ${sanitizePromptText(state.summary || 'None')}\n\nTranscript:\n${transcriptWindow}`;
+  const systemPrompt = `You are a World-Class Meeting Intelligence Engine. 
+Your goal is to extract high-fidelity insights from meeting transcripts.
+
+OUTPUT GUIDELINES:
+- Provide a concise yet professional summary (business grade).
+- Identify distinct topics and their statuses (active/completed).
+- Precisely capture decisions and action items (with assignees if mentioned).
+- Detect the prevailing sentiment and emotional dynamics.
+- Extract "Key Insights" that go beyond a simple summary (strategic value).
+- Track specific questions raised that remain unanswered.
+
+You must return ONLY a JSON object.`;
+
+  const userPrompt = `Analyze the following meeting transcript segment.
+Integrate this new data with the previous context.
+
+PREVIOUS CONTEXT (Summary): 
+${state.summary || 'Initial session'}
+
+RECENT TRANSCRIPT:
+${transcriptWindow}
+
+Return a JSON object with these exact keys:
+{
+  "summary": "Updated meeting summary...",
+  "topics": [{"name": "Topic", "status": "active|completed"}],
+  "decisions": ["Decision 1", ...],
+  "actionItems": ["Action 1", ...],
+  "currentTopic": "Identifying the current main topic",
+  "sentiment": "positive|neutral|negative|mixed",
+  "keyInsights": ["Insight 1", ...],
+  "questionsRaised": ["Question 1", ...]
+}`;
 
   const response = await fetch(OPENAI_CHAT_URL, {
     method: 'POST',
@@ -220,7 +262,7 @@ async function summarizeTranscriptIfNeeded() {
     body: JSON.stringify({
       model: settings.aiModel || 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You are an AI assistant that outputs only valid JSON.' },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.2,
@@ -554,7 +596,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
 
         try {
-          const text = await transcribeChunk(message.audioBase64, message.mimeType);
+          const prompt = getTranscriptionPrompt();
+          const text = await transcribeChunk(message.audioBase64, message.mimeType, prompt);
           if (text) {
             state.transcript.push({ speaker: 'Audio', text, timestamp: Date.now() });
             await summarizeTranscriptIfNeeded();
