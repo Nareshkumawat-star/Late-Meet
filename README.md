@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="icons/icon128.png" alt="AI Meeting Copilot Logo" width="120" />
+  <img src="src/icons/icon128.png" alt="AI Meeting Copilot Logo" width="120" />
 
   # AI Meeting Copilot
 
