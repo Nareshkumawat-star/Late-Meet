@@ -1,0 +1,34 @@
+{
+  "name": "extension",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">   <img src=\"icons/icon128.png\" alt=\"AI Meeting Copilot Logo\" width=\"120\" />",
+  "main": "background.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shouri123/Late-Meet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shouri123/Late-Meet/issues"
+  },
+  "homepage": "https://github.com/shouri123/Late-Meet#readme",
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.33",
+    "@types/chrome": "^0.0.260",
+    "@types/node": "^20.11.16",
+    "typescript": "^5.3.3",
+    "vite": "^5.4.21"
+  },
+  "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.45.0",
+    "@openrouter/sdk": "^0.12.20"
+  }
+}
