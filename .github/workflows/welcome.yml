@@ -14,8 +14,6 @@ jobs:
     steps:
       - uses: actions/first-interaction@v1
         with:
-          repo-token: ${{ secrets.FIRST_INTERACTION_TOKEN }}
-
           pr-message: |
             👋 Thank you for your first contribution to Late-Meet!
 
