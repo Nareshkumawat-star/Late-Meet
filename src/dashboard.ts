@@ -517,13 +517,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     return markdown;
   }
 
+  let exportToastTimer: number | null = null;
+
   function showToast(message: string, type: "success" | "error" = "success"): void {
     const toast = document.getElementById("export-toast") as HTMLDivElement;
     if (!toast) return;
+    if (exportToastTimer) window.clearTimeout(exportToastTimer);
     toast.textContent = message;
     toast.className = `export-toast ${type} show`;
-    setTimeout(() => {
+    exportToastTimer = window.setTimeout(() => {
       toast.className = "export-toast";
+      exportToastTimer = null;
     }, 3000);
   }
 
@@ -534,7 +538,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     anchor.href = url;
     anchor.download = filename;
     anchor.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
   }
 
   // ——— Export Dropdown ———
@@ -561,16 +567,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("export-md-btn")?.addEventListener("click", async () => {
-    const state = await chrome.runtime.sendMessage({ type: "GET_STATE" });
-    if (!state) return;
-    const markdown = generateMarkdown(state);
-    const filename = `meeting-summary-${new Date().toISOString().slice(0, 10)}.md`;
-    downloadFile(markdown, filename, "text/markdown");
-    exportDropdown?.setAttribute("hidden", "");
-    exportBtn?.setAttribute("aria-expanded", "false");
-    showToast("Downloaded as .md file", "success");
+    try {
+      const state = await chrome.runtime.sendMessage({ type: "GET_STATE" });
+      if (!state) throw new Error("No meeting data available");
+      const markdown = generateMarkdown(state);
+      const filename = `meeting-summary-${new Date().toISOString().slice(0, 10)}.md`;
+      downloadFile(markdown, filename, "text/markdown");
+      showToast("Downloaded as .md file", "success");
+    } catch (err) {
+      showToast("Failed to export: " + (err instanceof Error ? err.message : String(err)), "error");
+    } finally {
+      exportDropdown?.setAttribute("hidden", "");
+      exportBtn?.setAttribute("aria-expanded", "false");
+    }
   });
-
   document.getElementById("export-json-btn")?.addEventListener("click", async () => {
     const state = await chrome.runtime.sendMessage({ type: "GET_STATE" });
     if (!state) return;
