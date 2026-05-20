@@ -329,6 +329,9 @@ initTheme();
         btn.style.display = "none";
       } else if (btn && !message.state.isActive) {
         btn.style.display = "flex";
+        btn.disabled = false;
+        const textSpan = btn.querySelector(".late-meet-btn-text");
+        if (textSpan) textSpan.textContent = "Start Copilot";
       }
       sendResponse({ success: true });
       return false;
