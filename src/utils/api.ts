@@ -40,8 +40,12 @@ export interface ChatCompletionResponse {
  * Get the stored OpenAI API key
  */
 export async function getApiKey(): Promise<string | null> {
-  const result = await chrome.storage.session.get("openai_api_key");
-  return (result.openai_api_key as string) || null;
+  const sessionResult = await chrome.storage.session.get("openai_api_key");
+  if (sessionResult.openai_api_key) {
+    return sessionResult.openai_api_key as string;
+  }
+  const localResult = await chrome.storage.local.get("openai_api_key");
+  return (localResult.openai_api_key as string) || null;
 }
 /**
  * Call OpenAI Chat Completions API

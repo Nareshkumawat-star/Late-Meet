@@ -189,12 +189,8 @@ initTheme();
     selfName: string | null;
   }> {
     const candidates: ParticipantNameCandidate[] = [];
-    const showEveryoneBtn = document.querySelector(SELECTORS.showEveryoneBtn) as HTMLElement | null;
-    if (showEveryoneBtn) {
-      showEveryoneBtn.click();
-      await wait(200);
-    }
-
+    // We scrape participant elements already present in the DOM (video tiles or side panel).
+    // To prevent disrupting the user's view, we do not force-click the "Show everyone" button in the polling loop.
     const participantElements = new Set<HTMLElement>();
     let selfName: string | null = null;
 

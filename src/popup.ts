@@ -13,7 +13,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   let lastState: State | null = null;
 
   // ——— Check if API key is configured ———
-  const config = await chrome.storage.session.get(["openai_api_key", "elevenlabs_api_key"]);
+  const sessionConfig = await chrome.storage.session.get(["openai_api_key", "elevenlabs_api_key"]);
+  const localConfig = await chrome.storage.local.get(["openai_api_key", "elevenlabs_api_key"]);
+  const config = {
+    openai_api_key: sessionConfig.openai_api_key || localConfig.openai_api_key,
+    elevenlabs_api_key: sessionConfig.elevenlabs_api_key || localConfig.elevenlabs_api_key,
+  };
 
   if (!config.openai_api_key && !config.elevenlabs_api_key) {
     setupView.style.display = "block";

@@ -139,8 +139,10 @@ async function broadcastStateUpdate() {
 }
 
 async function getApiKey() {
-  const result = await chrome.storage.session.get("openai_api_key");
-  return result.openai_api_key || null;
+  const sessionResult = await chrome.storage.session.get("openai_api_key");
+  if (sessionResult.openai_api_key) return sessionResult.openai_api_key;
+  const localResult = await chrome.storage.local.get("openai_api_key");
+  return localResult.openai_api_key || null;
 }
 
 interface Settings {
@@ -215,9 +217,14 @@ function getTranscriptionPrompt() {
 async function transcribeChunk(base64Audio: string, mimeType = "audio/webm", prompt = "") {
   // Use ElevenLabs API key if available, fallback to OpenAI if not?
   // No, the requirement is to use ElevenLabs.
-  const elevenlabsKey = await chrome.storage.session
+  let elevenlabsKey = await chrome.storage.session
     .get("elevenlabs_api_key")
     .then((r) => r.elevenlabs_api_key);
+  if (!elevenlabsKey) {
+    elevenlabsKey = await chrome.storage.local
+      .get("elevenlabs_api_key")
+      .then((r) => r.elevenlabs_api_key);
+  }
 
   const bytes = Uint8Array.from(atob(base64Audio), (c) => c.charCodeAt(0));
   const blob = new Blob([bytes], { type: mimeType });
