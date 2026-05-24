@@ -124,7 +124,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const audioBtn = document.getElementById("dash-start-audio-btn") as HTMLButtonElement | null;
   audioBtn?.addEventListener("click", async () => {
     if (lastState?.audioActive) {
-      console.log("[Dashboard] Audio already active, skipping.");
+      try {
+        audioBtn.disabled = true;
+        await chrome.runtime.sendMessage({ type: "MANUAL_STOP_AUDIO" });
+      } catch (err) {
+        console.error("[Dashboard] Failed to stop audio:", err);
+      } finally {
+        audioBtn.disabled = false;
+      }
       return;
     }
 
@@ -221,10 +228,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   function setAudioBtnActive(active: boolean) {
     if (!audioBtn) return;
     if (active) {
-      audioBtn.style.display = "none";
       audioBtn.classList.add("active");
+      audioBtn.disabled = false;
+      audioBtn.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" style="margin-right: 6px;"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 12h6"></path></svg> Stop Audio';
     } else {
-      audioBtn.style.display = "flex";
       audioBtn.classList.remove("active");
       audioBtn.disabled = false;
       audioBtn.innerHTML =

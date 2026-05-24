@@ -771,6 +771,9 @@ async function stopAudioCapture(reason = "Stopped") {
 
   state.audioActive = false;
   state.isActive = false;
+  state.meetingId = null;
+  state.meetingUrl = null;
+  state.targetTabId = null;
 
   await broadcastStateUpdate();
 
@@ -783,17 +786,46 @@ async function stopAudioCapture(reason = "Stopped") {
   await closeOffscreenDocumentIfPresent();
 }
 
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.status === "complete" && tab.url?.includes("meet.google.com/")) {
-    const urlMatch = tab.url.match(/meet\.google\.com\/([a-z\-]+)/);
-    const meetingId = urlMatch ? urlMatch[1] : null;
+function extractMeetCode(url: string | undefined | null): string | null {
+  const value = String(url || "");
+  if (!value.includes("meet.google.com/")) return null;
+  const match = value.match(/meet\.google\.com\/([a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{3})/i);
+  return match ? match[1] : null;
+}
 
+function isMeetCode(value: string | null | undefined): boolean {
+  return /^[a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{3}$/i.test(String(value || ""));
+}
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  const nextUrl = changeInfo.url || tab.url;
+
+  // If we are actively capturing from this tab, stop capture as soon as the tab
+  // navigates away from a Meet meeting scope (privacy safety default).
+  if (state.audioActive && state.targetTabId && tabId === state.targetTabId) {
+    const meetCode = extractMeetCode(nextUrl);
+    if (!nextUrl?.includes("meet.google.com/")) {
+      await stopAudioCapture("Navigated away from Meet");
+      return;
+    }
+    if (!meetCode) {
+      await stopAudioCapture("Left meeting");
+      return;
+    }
+    if (isMeetCode(state.meetingId) && meetCode !== state.meetingId) {
+      await stopAudioCapture("Switched meeting");
+      return;
+    }
+  }
+
+  if (changeInfo.status === "complete" && nextUrl?.includes("meet.google.com/")) {
+    const meetingId = extractMeetCode(nextUrl);
     if (meetingId && meetingId !== "new") {
       if (!state.isActive) {
         resetState();
         state.isActive = true;
         state.meetingId = meetingId;
-        state.meetingUrl = tab.url || null;
+        state.meetingUrl = nextUrl || null;
         state.targetTabId = tabId || null;
         state.startTime = Date.now();
         state.participants = ["You"];
@@ -874,6 +906,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           message.streamId,
           message.includeMicrophone !== false,
         );
+        sendResponse({ success: true });
+        return;
+      }
+
+      case "MANUAL_STOP_AUDIO": {
+        if (state.audioActive || state.isActive) {
+          await stopAudioCapture("Stopped by user");
+        }
         sendResponse({ success: true });
         return;
       }
