@@ -15,7 +15,7 @@ const ELEVENLABS_STT_MODEL = "scribe_v2";
 // Delay late-joiner auto messages until 10s to avoid lobby/join churn spam.
 const MIN_MEETING_DURATION_FOR_WELCOME = 10;
 
-import { State } from "./types";
+import { ActionItem, Decision, State } from "./types";
 import { audioFileExtensionForMimeType, isChunkViable } from "./audioProcessing";
 import { getElevenLabsApiKey, getOpenAiApiKey } from "./utils/credentials";
 
@@ -181,6 +181,66 @@ function sanitizePromptText(value: string | null) {
     .replace(/```/g, "")
     .replace(/[<>{}]/g, " ")
     .slice(0, MAX_PROMPT_LENGTH);
+}
+
+function sanitizeOptionalField(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const sanitized = sanitizePromptText(value).trim();
+  return sanitized || undefined;
+}
+
+function normalizeDecisions(value: unknown, fallback: Decision[]): Decision[] {
+  if (!Array.isArray(value)) return fallback;
+
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        const text = sanitizeOptionalField(item);
+        return text ? { text } : null;
+      }
+
+      if (item && typeof item === "object") {
+        const record = item as Record<string, unknown>;
+        const text = sanitizeOptionalField(record.text);
+        if (!text) return null;
+
+        return {
+          text,
+          by: sanitizeOptionalField(record.by),
+          timestamp: sanitizeOptionalField(record.timestamp),
+        };
+      }
+
+      return null;
+    })
+    .filter((item): item is Decision => Boolean(item));
+}
+
+function normalizeActionItems(value: unknown, fallback: ActionItem[]): ActionItem[] {
+  if (!Array.isArray(value)) return fallback;
+
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        const task = sanitizeOptionalField(item);
+        return task ? { task } : null;
+      }
+
+      if (item && typeof item === "object") {
+        const record = item as Record<string, unknown>;
+        const task = sanitizeOptionalField(record.task);
+        if (!task) return null;
+
+        return {
+          task,
+          owner: sanitizeOptionalField(record.owner),
+          deadline: sanitizeOptionalField(record.deadline),
+        };
+      }
+
+      return null;
+    })
+    .filter((item): item is ActionItem => Boolean(item));
 }
 
 async function ensureOffscreenDocument() {
@@ -406,8 +466,12 @@ async function summarizeTranscriptIfNeeded() {
           '"currentTopic": "Identifying the current main topic"',
         ]
       : []),
-    ...(decisionDetectionEnabled ? ['"decisions": ["Decision 1", ...]'] : []),
-    ...(actionExtractionEnabled ? ['"actionItems": ["Action 1", ...]'] : []),
+    ...(decisionDetectionEnabled
+      ? ['"decisions": [{"text": "Decision", "by": "optional speaker", "timestamp": "optional"}]']
+      : []),
+    ...(actionExtractionEnabled
+      ? ['"actionItems": [{"task": "Action", "owner": "optional owner", "deadline": "optional"}]']
+      : []),
     ...(sentimentAnalysisEnabled ? ['"sentiment": "positive|neutral|negative|mixed"'] : []),
     '"keyInsights": ["Insight 1", ...]',
     '"questionsRaised": ["Question 1", ...]',
@@ -420,8 +484,8 @@ OUTPUT GUIDELINES:
 - Provide a concise yet professional summary (business grade).
 - Extract only the fields requested by the user prompt.
 ${topicDetectionEnabled ? "- Identify distinct topics and their statuses (active/completed)." : ""}
-${decisionDetectionEnabled ? "- Precisely capture decisions if mentioned." : ""}
-${actionExtractionEnabled ? "- Precisely capture action items with assignees if mentioned." : ""}
+${decisionDetectionEnabled ? '- Precisely capture decisions as objects with a required "text" field and optional "by" and "timestamp" fields.' : ""}
+${actionExtractionEnabled ? '- Precisely capture action items as objects with a required "task" field and optional "owner" and "deadline" fields.' : ""}
 ${sentimentAnalysisEnabled ? "- Detect the prevailing sentiment and emotional dynamics." : ""}
 - Extract "Key Insights" that go beyond a simple summary (strategic value).
 - Track specific questions raised that remain unanswered.
@@ -479,12 +543,12 @@ Return a JSON object with these exact keys:
     state.currentTopic = "";
   }
   if (decisionDetectionEnabled) {
-    state.decisions = Array.isArray(parsed.decisions) ? parsed.decisions : state.decisions;
+    state.decisions = normalizeDecisions(parsed.decisions, state.decisions);
   } else {
     state.decisions = [];
   }
   if (actionExtractionEnabled) {
-    state.actionItems = Array.isArray(parsed.actionItems) ? parsed.actionItems : state.actionItems;
+    state.actionItems = normalizeActionItems(parsed.actionItems, state.actionItems);
   } else {
     state.actionItems = [];
   }
