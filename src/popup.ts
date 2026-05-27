@@ -213,8 +213,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return (
         Array.from(miniBtn.childNodes)
           .reverse()
-          .find((n) => n.nodeType === Node.TEXT_NODE && String(n.textContent || "").trim()) ||
-        null
+          .find((n) => n.nodeType === Node.TEXT_NODE && String(n.textContent || "").trim()) || null
       );
     };
 

@@ -786,10 +786,21 @@ async function stopAudioCapture(reason = "Stopped") {
   await closeOffscreenDocumentIfPresent();
 }
 
+function parseMeetUrl(value: string | undefined | null): URL | null {
+  try {
+    const parsed = new URL(String(value || ""));
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    if (parsed.hostname !== "meet.google.com") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function extractMeetCode(url: string | undefined | null): string | null {
-  const value = String(url || "");
-  if (!value.includes("meet.google.com/")) return null;
-  const match = value.match(/meet\.google\.com\/([a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{3})/i);
+  const parsed = parseMeetUrl(url);
+  if (!parsed) return null;
+  const match = parsed.pathname.match(/^\/([a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{3})(?:\/|$)/i);
   return match ? match[1] : null;
 }
 
@@ -803,8 +814,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   // If we are actively capturing from this tab, stop capture as soon as the tab
   // navigates away from a Meet meeting scope (privacy safety default).
   if (state.audioActive && state.targetTabId && tabId === state.targetTabId) {
+    const isMeetUrl = Boolean(parseMeetUrl(nextUrl));
     const meetCode = extractMeetCode(nextUrl);
-    if (!nextUrl?.includes("meet.google.com/")) {
+    if (!isMeetUrl) {
       await stopAudioCapture("Navigated away from Meet");
       return;
     }
@@ -818,9 +830,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     }
   }
 
-  if (changeInfo.status === "complete" && nextUrl?.includes("meet.google.com/")) {
+  if (changeInfo.status === "complete") {
     const meetingId = extractMeetCode(nextUrl);
-    if (meetingId && meetingId !== "new") {
+    if (meetingId) {
       if (!state.isActive) {
         resetState();
         state.isActive = true;
@@ -838,19 +850,16 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
-    if (tab.url?.includes("meet.google.com/")) {
-      const urlMatch = tab.url.match(/meet\.google\.com\/([a-z\-]+)/);
-      const meetingId = urlMatch ? urlMatch[1] : null;
-      if (meetingId && meetingId !== "new" && !state.isActive) {
-        state.meetingId = meetingId;
-        state.meetingUrl = tab.url;
-        state.targetTabId = activeInfo.tabId;
-        await broadcastStateUpdate();
-      }
+    const meetingId = extractMeetCode(tab.url);
+    if (meetingId && !state.isActive) {
+      state.meetingId = meetingId;
+      state.meetingUrl = tab.url || null;
+      state.targetTabId = activeInfo.tabId;
+      await broadcastStateUpdate();
     }
   } catch (err) {
     // Tab might be closed by now
-    console.log(err); // since lint is giving error
+    console.debug("[LateMeet] tab activation handler failed:", err);
   }
 });
 
@@ -913,6 +922,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case "MANUAL_STOP_AUDIO": {
         if (state.audioActive || state.isActive) {
           await stopAudioCapture("Stopped by user");
+        }
+        sendResponse({ success: true });
+        return;
+      }
+
+      case "MEETING_ENDED":
+      case "CALL_ENDED": {
+        if (state.audioActive || state.isActive) {
+          await stopAudioCapture("Call ended");
         }
         sendResponse({ success: true });
         return;
