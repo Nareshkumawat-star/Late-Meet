@@ -101,7 +101,7 @@ The extension is built natively on Manifest V3 using **TypeScript and Vite 5** f
        ▼               ▼                  ▼
 ┌──────────┐   ┌──────────────┐   ┌──────────────────────┐
 │ElevenLabs│   │   OpenAI     │   │ chrome.storage.local │
-│ Scribe   │   │   GPT API   │   │                       │
+│ Scribe   │   │   GPT API    │   │                      │
 │ STT API  │   │              │   │  • Transcripts       │
 │          │   │  • Summaries │   │  • Summaries         │
 │ Fallback:│   │  • Insights  │   │  • Action items      │
