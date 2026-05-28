@@ -2,6 +2,7 @@
 
 import { State } from "./types";
 import { audioFileExtensionForMimeType, isChunkViable } from "./audioProcessing";
+import { AudioChunkQueue, AudioChunkQueueItem } from "./audioChunkQueue";
 
 const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_WHISPER_URL = "https://api.openai.com/v1/audio/transcriptions";
@@ -12,6 +13,7 @@ const TRANSCRIPT_WINDOW_SIZE = 25;
 const SUMMARIZATION_MAX_TOKENS = 1200;
 const JOINER_MESSAGE_MAX_TOKENS = 120;
 const ELEVENLABS_STT_MODEL = "scribe_v2";
+const MAX_PENDING_AUDIO_CHUNKS = 8;
 // Delay late-joiner auto messages until 10s to avoid lobby/join churn spam.
 const MIN_MEETING_DURATION_FOR_WELCOME = 10;
 
@@ -241,6 +243,7 @@ function resetState() {
   state.targetTabId = null;
   state.lastSummarizedAt = 0;
   state.pendingJoiners.clear();
+  audioChunkQueue.clear();
   state.participantCount = 0;
   selfParticipantName = null;
 }
@@ -702,6 +705,55 @@ Return a JSON object with these exact keys:
     summaryInFlight = false;
   }
 }
+
+interface QueuedAudioChunk {
+  audioBase64: string;
+  mimeType: string;
+  approxBytes: number;
+  receivedAt: number;
+}
+
+async function processQueuedAudioChunk({ id, item }: AudioChunkQueueItem<QueuedAudioChunk>) {
+  if (!state.isActive) {
+    console.warn(`[LateMeet] queued audio chunk ${id} ignored because session is inactive`);
+    return;
+  }
+
+  console.log(
+    `[LateMeet] processing queued chunk ${id} — ~${item.approxBytes} bytes  mimeType=${item.mimeType}`,
+  );
+
+  const prompt = getTranscriptionPrompt();
+  const rawText = await transcribeChunk(item.audioBase64, item.mimeType, prompt);
+
+  if (!rawText) {
+    console.warn(`[LateMeet] STT returned empty for queued chunk ${id}`);
+    return;
+  }
+
+  console.log(`[LateMeet] transcript received for chunk ${id} — ${rawText.length} chars`);
+  const refinedText = await refineTranscription(rawText);
+  console.log(`[LateMeet] transcript refined for chunk ${id} — ${refinedText.length} chars`);
+
+  state.transcript.push({
+    speaker: "Audio",
+    text: refinedText,
+    timestamp: item.receivedAt,
+  });
+
+  await summarizeTranscriptIfNeeded();
+  await broadcastStateUpdate();
+}
+
+const audioChunkQueue = new AudioChunkQueue<QueuedAudioChunk>({
+  maxPending: MAX_PENDING_AUDIO_CHUNKS,
+  process: processQueuedAudioChunk,
+  onError: async (err, { id }) => {
+    console.error(`[LateMeet] queued chunk ${id} processing failed:`, err);
+    addTimeline(`Audio chunk ${id} processing failed`);
+    await broadcastStateUpdate();
+  },
+});
 
 function detectNewJoiners(currentList: string[]) {
   if (state.participants.length === 0 && state.initialParticipants.length === 0) {
@@ -1167,30 +1219,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
+        if (typeof message.audioBase64 !== "string" || !message.audioBase64) {
+          sendResponse({ success: false, error: "Missing audio chunk payload" });
+          return;
+        }
+
         const base64Len = message.audioBase64?.length ?? 0;
         const approxBytes = Math.round((base64Len * 3) / 4);
         console.log(
           `[LateMeet] chunk received — ~${approxBytes} bytes  mimeType=${message.mimeType}`,
         );
 
-        try {
-          const prompt = getTranscriptionPrompt();
-          const rawText = await transcribeChunk(message.audioBase64, message.mimeType, prompt);
-          if (rawText) {
-            console.log(`[LateMeet] transcript received — ${rawText.length} chars`);
-            const refinedText = await refineTranscription(rawText);
-            console.log(`[LateMeet] transcript refined — ${refinedText.length} chars`);
-            state.transcript.push({ speaker: "Audio", text: refinedText, timestamp: Date.now() });
-            await summarizeTranscriptIfNeeded();
-            await broadcastStateUpdate();
-          } else {
-            console.warn("[LateMeet] STT returned empty — chunk may be silent or too short");
-          }
-          sendResponse({ success: true });
-        } catch (err) {
-          console.error("[LateMeet] chunk processing failed:", err);
-          sendResponse({ success: false, error: (err as Error).message });
+        const result = audioChunkQueue.enqueue({
+          audioBase64: message.audioBase64,
+          mimeType: typeof message.mimeType === "string" ? message.mimeType : "audio/webm",
+          approxBytes,
+          receivedAt: Date.now(),
+        });
+
+        if (!result.accepted) {
+          console.warn("[LateMeet] audio chunk queue full — chunk rejected");
+          sendResponse({
+            success: false,
+            queued: false,
+            pending: result.pending,
+            error: result.error,
+          });
+          return;
         }
+
+        sendResponse({
+          success: true,
+          queued: true,
+          chunkId: result.id,
+          pending: result.pending,
+        });
         return;
       }
 
