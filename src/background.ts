@@ -1239,7 +1239,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       case "UNEXPECTED_TRACK_END": {
-        await stopAudioCapture("Tab closed");
+        await stopAudioCapture("Unexpected track end");
         sendResponse({ success: true });
         return;
       }
