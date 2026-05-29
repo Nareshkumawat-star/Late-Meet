@@ -54,7 +54,6 @@ export interface State {
   targetTabId?: number | null;
   lastSummarizedAt?: number;
   duration?: number;
-  pendingJoiners?: any;
   participantCount?: number;
   id?: string;
   savedAt?: number;

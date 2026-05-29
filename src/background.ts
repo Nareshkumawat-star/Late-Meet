@@ -221,11 +221,20 @@ const state: State = {
   currentSpeaker: null,
   targetTabId: null,
   lastSummarizedAt: 0,
-  pendingJoiners: new Set(),
   participantCount: 0,
 };
 
 let selfParticipantName: string | null = null;
+
+// ---------------------------------------------------------------------------
+// Transient Late-Joiner Processing State
+// ---------------------------------------------------------------------------
+// Tracks which late joiners are currently being processed for welcome messages.
+// This is NOT persisted or shared with UI — it's purely for preventing duplicate
+// welcome message sends during the maybeWelcomeJoiners() workflow.
+// Entries are added when processing begins and removed when it completes (see finally block).
+// This state is discarded on service worker suspension and not restored.
+const pendingJoinersInFlight = new Set<string>();
 
 function normalizeParticipantName(value: string | null | undefined): string {
   return String(value || "")
@@ -255,7 +264,7 @@ function resetState() {
   state.currentSpeaker = null;
   state.targetTabId = null;
   state.lastSummarizedAt = 0;
-  state.pendingJoiners.clear();
+  pendingJoinersInFlight.clear();
   audioChunkQueue.clear();
   state.participantCount = 0;
   selfParticipantName = null;
@@ -872,32 +881,45 @@ async function sendChatToTab(tabId: number, text: string) {
 }
 
 async function maybeWelcomeJoiners(tabId: number | undefined, joiners: string[]) {
-  if (!joiners.length || getDuration() <= MIN_MEETING_DURATION_FOR_WELCOME || !tabId) return;
+  if (!joiners.length || getDuration() <= MIN_MEETING_DURATION_FOR_WELCOME || !tabId) {
+    return;
+  }
 
   const settings = await getSettings();
-  if (!isFeatureEnabled(settings, "lateJoinerBriefing")) return;
+  if (!isFeatureEnabled(settings, "lateJoinerBriefing")) {
+    return;
+  }
 
   const normalizedSelf = normalizeParticipantName(selfParticipantName);
 
   for (const joiner of joiners) {
     const name = String(joiner || "").trim();
     const normalizedName = normalizeParticipantName(name);
+
+    // Ignore invalid/self placeholder participants
     if (
       !name ||
       normalizedName === normalizeParticipantName("You") ||
-      (normalizedSelf && normalizedName === normalizedSelf) ||
-      state.pendingJoiners.has(name)
+      (normalizedSelf && normalizedName === normalizedSelf)
     ) {
       continue;
     }
 
-    state.pendingJoiners.add(name);
+    // Prevent duplicate welcome messages for case-only variants
+    // (e.g. "Alice" vs "alice")
+    if (pendingJoinersInFlight.has(normalizedName)) {
+      continue;
+    }
+
+    pendingJoinersInFlight.add(normalizedName);
+
     try {
       const text = await generateLateJoinerMessage(name);
       await sendChatToTab(tabId, text);
-      addTimeline(`Late joiner brief sent to ${name}`);
+    } catch (err) {
+      console.error("[LateMeet] Failed to welcome joiner:", err);
     } finally {
-      state.pendingJoiners.delete(name);
+      pendingJoinersInFlight.delete(normalizedName);
     }
   }
 }
