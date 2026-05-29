@@ -333,6 +333,8 @@ async function startCapture(
         await stopCapture();
       } catch (err) {
         console.error("[LateMeet][offscreen] Cleanup after track end failed:", err);
+      } finally {
+        await chrome.runtime.sendMessage({ type: "UNEXPECTED_TRACK_END" }).catch(() => {});
       }
     };
   });

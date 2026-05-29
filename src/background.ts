@@ -1238,6 +1238,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
+      case "UNEXPECTED_TRACK_END": {
+        await stopAudioCapture("Tab closed");
+        sendResponse({ success: true });
+        return;
+      }
+
       case "OFFSCREEN_LOG": {
         console.log("[LateMeet][offscreen]", message.message);
         sendResponse({ success: true });
