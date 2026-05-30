@@ -1152,7 +1152,7 @@ async function stopAudioCapture(reason = "Stopped") {
   }
 }
 
-chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== "complete" || !tab.url) return;
   try {
     const parsedUrl = new URL(tab.url);
@@ -1167,7 +1167,7 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
         state.isActive = true;
         state.meetingId = meetingId;
         state.meetingUrl = tab.url || null;
-        state.targetTabId = _tabId || null;
+        state.targetTabId = tabId || null;
         state.startTime = Date.now();
         state.participants = ["You"];
         await broadcastStateUpdate();
