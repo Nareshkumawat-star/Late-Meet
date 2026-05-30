@@ -508,7 +508,7 @@ async function refineTranscription(rawText: string) {
   if (!apiKey) return rawText;
 
   const systemPrompt = `You are an expert AI transcription editor. 
-Your task is to correct errors, remove filler words (um, uh, like), and improve the clarity of the provided meeting transcript segment while strictly preserving the speaker's original meaning and[...]
+Your task is to correct errors, remove filler words (um, uh, like), and improve the clarity of the provided meeting transcript segment while strictly preserving the speaker's original meaning and intent.
 Return ONLY the corrected transcript text. If the input is unclear, inaudible, or empty, return the exact input unchanged. Never add commentary, apologies, or meta-responses.`;
 
   try {
