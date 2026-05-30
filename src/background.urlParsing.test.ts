@@ -45,10 +45,18 @@ function installChromeMock(options: MockChromeOptions = {}) {
   mockGetTabResult = options.getTabResult ?? {};
   sentMessages = [];
 
+  // Node.js does not define `self`; service-worker code uses it as an alias
+  // for globalThis (e.g. self.addEventListener("offline", ...)).
+  // We also need to stub addEventListener since Node.js globalThis lacks it.
+  if (typeof (globalThis as Record<string, unknown>).addEventListener !== "function") {
+    (globalThis as Record<string, unknown>).addEventListener = () => {};
+  }
+  (globalThis as Record<string, unknown>).self = globalThis;
+
   (globalThis as Record<string, unknown>).chrome = {
     runtime: {
       getURL: (path: string) => `chrome-extension://fakeextid/${path}`,
-      sendMessage: async (msg: { type: string; state?: Record<string, unknown> }) => {
+
         sentMessages.push(msg);
       },
       getContexts: async () => [],
