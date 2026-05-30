@@ -1184,7 +1184,10 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     if (!tab.url) return;
     const parsedUrl = new URL(tab.url);
     if (parsedUrl.hostname !== "meet.google.com") return;
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
     const pathMatch = /^\/([a-z-]+)/.exec(parsedUrl.pathname);
     const meetingId = pathMatch ? pathMatch[1] : null;
     if (meetingId && meetingId !== "new" && !state.isActive) {
