@@ -149,9 +149,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     btn.addEventListener("click", () => {
       const targetId = btn.dataset.target;
       if (targetId) {
-        const target = document.getElementById(targetId) as HTMLInputElement | null;
-        if (target) {
-          target.type = target.type === "password" ? "text" : "password";
+        if (targetId) {
+          const target = document.getElementById(targetId) as HTMLInputElement | null;
+          if (target) {
+            target.type = target.type === "password" ? "text" : "password";
+          }
         }
       }
     });
@@ -222,10 +224,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
     const status = document.getElementById("save-status");
 
-    const openaiKey = (document.getElementById("openai-key") as HTMLInputElement)?.value.trim();
-    const elevenlabsKey = (
-      document.getElementById("elevenlabs-key") as HTMLInputElement
-    )?.value.trim();
+    const openaiKey =
+      (document.getElementById("openai-key") as HTMLInputElement | null)?.value.trim() ?? "";
+    const elevenlabsKey =
+      (document.getElementById("elevenlabs-key") as HTMLInputElement | null)?.value.trim() ?? "";
 
     const originalText = saveBtn.textContent || "Save Settings";
     if (pendingUnlock) await pendingUnlock;

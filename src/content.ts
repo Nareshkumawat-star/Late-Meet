@@ -300,13 +300,36 @@ void initTheme().catch((err) => console.error(err));
     }
   }
 
+  // Configurable option to enable expanding hidden participants
+  let includeHiddenParticipants = true;
+
   async function collectParticipants(): Promise<{
     participants: string[];
     selfName: string | null;
   }> {
+    let closedPanelAfterScrape = false;
+
+    // If includeHiddenParticipants option is enabled, check if the panel is closed.
+    // Expand the participant list temporarily to ensure full collection.
+    if (includeHiddenParticipants) {
+      const chatInputEl = queryFirst(SELECTORS.chatInput);
+      const listPane = document.querySelector('[role="list"]'); // common element containing everyone list in meet pane
+      const isPanelOpen = !!chatInputEl || !!listPane;
+
+      if (!isPanelOpen) {
+        const showEveryoneBtn = document.querySelector(
+          SELECTORS.showEveryoneBtn,
+        ) as HTMLButtonElement | null;
+        if (showEveryoneBtn) {
+          showEveryoneBtn.click();
+          closedPanelAfterScrape = true;
+          await wait(400); // Wait briefly for DOM to render list of participants
+        }
+      }
+    }
+
     const candidates: ParticipantNameCandidate[] = [];
     // We scrape participant elements already present in the DOM (video tiles or side panel).
-    // To prevent disrupting the user's view, we do not force-click the "Show everyone" button in the polling loop.
     const participantElements = new Set<HTMLElement>();
     let selfName: string | null = null;
 
@@ -328,6 +351,16 @@ void initTheme().catch((err) => console.error(err));
         selfName: element.getAttribute("data-self-name"),
         text: getTextValue(element),
       });
+    }
+
+    // Restore UI state: close the panel if we opened it ourselves
+    if (closedPanelAfterScrape) {
+      const showEveryoneBtn = document.querySelector(
+        SELECTORS.showEveryoneBtn,
+      ) as HTMLButtonElement | null;
+      if (showEveryoneBtn) {
+        showEveryoneBtn.click();
+      }
     }
 
     return { participants: collectParticipantNames(candidates), selfName };
@@ -354,6 +387,13 @@ void initTheme().catch((err) => console.error(err));
         // Service worker idle
       }
     }, 5000);
+  }
+
+  function stopParticipantPolling() {
+    if (participantPollTimer) {
+      clearInterval(participantPollTimer);
+      participantPollTimer = null;
+    }
   }
 
   function scheduleActiveSpeakerCheck() {
@@ -454,6 +494,18 @@ void initTheme().catch((err) => console.error(err));
     detectActiveSpeaker();
   }
 
+  function stopActiveSpeakerDetection() {
+    if (activeSpeakerObserver) {
+      activeSpeakerObserver.disconnect();
+      activeSpeakerObserver = null;
+    }
+    if (activeSpeakerCheckTimer) {
+      clearTimeout(activeSpeakerCheckTimer);
+      activeSpeakerCheckTimer = null;
+    }
+    lastActiveSpeakerName = null;
+  }
+
   function injectFloatingButton() {
     const existing = document.getElementById("mc-float-btn");
     if (existing) return;
@@ -509,6 +561,42 @@ void initTheme().catch((err) => console.error(err));
 
   observer.observe(document.body, { childList: true, subtree: true });
 
+  function cleanUp() {
+    console.log(`${COPILOT_PREFIX} Disconnecting observers and clearing active timers.`);
+
+    if (participantPollTimer) {
+      clearInterval(participantPollTimer);
+      participantPollTimer = null;
+    }
+
+    if (activeSpeakerCheckTimer) {
+      clearTimeout(activeSpeakerCheckTimer);
+      activeSpeakerCheckTimer = null;
+    }
+
+    if (activeSpeakerObserver) {
+      activeSpeakerObserver.disconnect();
+      activeSpeakerObserver = null;
+    }
+
+    if (observer) {
+      observer.disconnect();
+    }
+  }
+
+  // Hook cleanup to page unload/navigation and visibility change
+  window.addEventListener("beforeunload", cleanUp);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      // Clear timers and observers when page is backgrounded or inactive to conserve resources
+      cleanUp();
+    } else if (document.visibilityState === "visible") {
+      // Re-initialize observation when resuming visibility
+      startParticipantPolling();
+      startActiveSpeakerDetection();
+    }
+  });
+
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "SHOW_BRIEF") {
       upsertBriefOverlay(message.briefContent, message.targetName);
@@ -533,6 +621,17 @@ void initTheme().catch((err) => console.error(err));
         const label = btn.querySelector(".mc-float-label");
         if (label) label.textContent = "Start Copilot";
       }
+
+      // Clean up polling and observers when the meeting session ends
+      if (!isActive) {
+        stopParticipantPolling();
+        stopActiveSpeakerDetection();
+      } else {
+        // Restart polling/detection if a new session begins
+        startParticipantPolling();
+        startActiveSpeakerDetection();
+      }
+
       sendResponse({ success: true });
       return false;
     }
