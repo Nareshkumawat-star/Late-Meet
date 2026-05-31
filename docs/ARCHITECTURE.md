@@ -176,7 +176,8 @@ Late Meet is intentionally local-first.
 
 - No project-managed databases or external session storage.
 - Users provide their own OpenAI and ElevenLabs API keys.
-- Audio and transcripts remain on the user's device.
+- Persistent meeting data is stored locally on the user's device (`chrome.storage.local`).
+- Audio/transcript content is transmitted only to user-configured providers (BYOK) for transcription/summarization.
 - `chrome.storage.local` is the only persistent storage mechanism.
 
 ---
