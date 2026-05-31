@@ -53,11 +53,11 @@ jobs:
           DIFF=$((PR_SIZE - BASE_SIZE))
 
           # Human readable
-          PR_HR=$(numfmt --to=iec-i --suffix=B $PR_SIZE 2>/dev/null || echo "${PR_SIZE}B")
-          BASE_HR=$(numfmt --to=iec-i --suffix=B $BASE_SIZE 2>/dev/null || echo "${BASE_SIZE}B")
+          PR_HR=$(numfmt --to=iec-i --suffix=B "$PR_SIZE" 2>/dev/null || echo "${PR_SIZE}B")
+          BASE_HR=$(numfmt --to=iec-i --suffix=B "$BASE_SIZE" 2>/dev/null || echo "${BASE_SIZE}B")
 
           if [ $DIFF -gt 0 ]; then
-            DIFF_HR="+$(numfmt --to=iec-i --suffix=B $DIFF 2>/dev/null || echo "${DIFF}B")"
+            DIFF_HR="+$(numfmt --to=iec-i --suffix=B "$DIFF" 2>/dev/null || echo "${DIFF}B")"
             EMOJI="📈"
           elif [ $DIFF -lt 0 ]; then
             DIFF_HR="$(numfmt --to=iec-i --suffix=B -- $DIFF 2>/dev/null || echo "${DIFF}B")"
