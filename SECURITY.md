@@ -21,7 +21,7 @@ Please **do not** open public GitHub issues for security vulnerabilities, as thi
 
 1. **GitHub Private Vulnerability Reporting**: Go to the **Security** tab of this repository on GitHub, click **Vulnerability reporting**, and submit a private report.
 2. **Email**: Send an email describing the vulnerability to the project maintainers.
-   - **Contact Email**: `shouri123@gmail.com`
+   - **Contact Email**: `chakrabortyshouri@gmail.com`
 
 ### Please include the following details in your report:
 
