@@ -951,7 +951,8 @@ async function processQueuedAudioChunk({ id, item }: AudioChunkQueueItem<QueuedA
 
   console.log(`[LateMeet] transcript received for chunk ${id} — ${rawText.length} chars`);
   const settings = await getSettings();
-  const refinedText = settings.transcriptRefinement ? await refineTranscription(rawText) : rawText;
+  const refinedText =
+    settings.transcriptRefinement === true ? await refineTranscription(rawText) : rawText;
   if (settings.transcriptRefinement) {
     console.log(`[LateMeet] transcript refined for chunk ${id} — ${refinedText.length} chars`);
   }
