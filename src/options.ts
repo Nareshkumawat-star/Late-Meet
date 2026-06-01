@@ -179,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
       if (passphraseInput) passphraseInput.disabled = false;
       if (passphraseStatus) {
-        passphraseStatus.style.color = "#EF4444";
+        passphraseStatus.style.color = "var(--text-danger)";
         passphraseStatus.textContent = "Locked — enter passphrase to unlock credential encryption";
       }
     }
@@ -190,7 +190,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const passphrase = passphraseInput?.value ?? "";
     if (!passphrase) {
       if (passphraseStatus) {
-        passphraseStatus.style.color = "#EF4444";
+        passphraseStatus.style.color = "var(--text-danger)";
         passphraseStatus.textContent = "Please enter a passphrase";
       }
       return;
@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elevenlabsKeyInput.value = creds.elevenlabs_api_key;
       }
     } else if (passphraseStatus) {
-      passphraseStatus.style.color = "#EF4444";
+      passphraseStatus.style.color = "var(--text-danger)";
       passphraseStatus.textContent = "Wrong passphrase — could not decrypt stored credentials";
     }
   }
