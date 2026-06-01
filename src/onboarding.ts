@@ -163,7 +163,13 @@ export async function renderOnboarding(container: HTMLElement) {
       const openBtn = container.querySelector<HTMLButtonElement>("#onb-open-dashboard");
       const finishBtn = container.querySelector<HTMLButtonElement>("#onb-finish");
       openBtn?.addEventListener("click", async () => {
-        await chrome.sidePanel.open({ tabId: chrome.tabs.TAB_ID_CURRENT });
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tabId = tabs[0]?.id;
+        if (typeof tabId === "number") {
+          await chrome.sidePanel.open({ tabId });
+        } else {
+          console.warn("Unable to determine current tab id for sidePanel.open");
+        }
       });
       finishBtn?.addEventListener("click", async () => {
         await chrome.storage.local.set({ onboardingCompleted: true });
