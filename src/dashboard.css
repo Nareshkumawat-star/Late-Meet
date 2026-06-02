@@ -211,14 +211,14 @@ body::-webkit-scrollbar-thumb,
 
 .tab-panel {
   display: none;
-  animation: fadeSlide 0.3s ease;
+  animation: fade-slide 0.3s ease;
 }
 
 .tab-panel.active {
   display: block;
 }
 
-@keyframes fadeSlide {
+@keyframes fade-slide {
   from {
     opacity: 0;
     transform: translateY(4px);

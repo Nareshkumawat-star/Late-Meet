@@ -90,7 +90,7 @@
   color: var(--text-main);
   font-size: 12px;
   font-weight: 600;
-  font-family: "Inter", "Segoe UI", sans-serif;
+  font-family: Inter, "Segoe UI", sans-serif;
   padding: 6px 12px;
   border-radius: 8px;
   white-space: nowrap;
@@ -272,9 +272,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  [id^="mc-"],
+  [id^="mc-"]::before,
+  [id^="mc-"]::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
