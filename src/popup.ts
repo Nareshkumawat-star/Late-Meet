@@ -344,6 +344,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("discard-session-btn")?.addEventListener("click", async (e) => {
+    if (
+      !confirm(
+        "Are you sure you want to discard this session? All meeting intelligence will be permanently lost.",
+      )
+    ) {
+      return;
+    }
     const btn = e.currentTarget as HTMLButtonElement;
     const saveBtn = document.getElementById("save-session-btn") as HTMLButtonElement | null;
     const originalText = btn.textContent || "Discard";
