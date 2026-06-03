@@ -225,12 +225,15 @@ export async function deleteSavedMeetingSession(
   });
 }
 
-// Safe local storage quota wrapper
+// Safe local storage quota wrapper. Logs storage failures without throwing.
 export async function safeLocalStore(key: string, value: unknown): Promise<void> {
-  try {
-    await chrome.storage.local.set({ [key]: value });
-  } catch (err) {
-    console.error("[LateMeet] Storage write failed for key", key, ":", err);
-    throw err;
-  }
+  await new Promise<void>((resolve) => {
+    chrome.storage.local.set({ [key]: value }, () => {
+      const err = chrome.runtime.lastError;
+      if (err) {
+        console.error("[LateMeet] Storage write failed for key", key, ":", err.message);
+      }
+      resolve();
+    });
+  });
 }
