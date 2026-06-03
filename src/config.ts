@@ -21,5 +21,7 @@ export const SILENCE_FLUSH_MS = 1500;
 export const MAX_BUFFER_MS = 25000;
 
 // Meeting Behavior
+// Seconds to wait before sending the welcome/catch-up message, avoiding
+// transient lobby or join churn during the first moments of a meeting.
 export const MIN_MEETING_DURATION_FOR_WELCOME = 10;
 export const BROADCAST_THROTTLE_MS = 500;

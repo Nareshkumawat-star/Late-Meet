@@ -19,11 +19,6 @@ import { normalizeActiveSpeakerName, resolveTranscriptSpeaker } from "./speakerA
 import { getMeetingIdFromUrl } from "./meetingTabs";
 import { getOpenAiApiKey, getElevenLabsApiKey } from "./utils/credentials";
 import { isMessageFromActiveMeeting } from "./activeMeetingMessages";
-
-const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
-const OPENAI_WHISPER_URL = "https://api.openai.com/v1/audio/transcriptions";
-const OFFSCREEN_DOCUMENT_PATH = "src/offscreen.html";
-const OFFSCREEN_DOCUMENT_URL = chrome.runtime.getURL(OFFSCREEN_DOCUMENT_PATH);
 import {
   BROADCAST_THROTTLE_MS,
   DEFAULT_CHAT_MODEL,
@@ -36,6 +31,11 @@ import {
   TRANSCRIPT_WINDOW_SIZE,
   WHISPER_MODEL,
 } from "./config";
+
+const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_WHISPER_URL = "https://api.openai.com/v1/audio/transcriptions";
+const OFFSCREEN_DOCUMENT_PATH = "src/offscreen.html";
+const OFFSCREEN_DOCUMENT_URL = chrome.runtime.getURL(OFFSCREEN_DOCUMENT_PATH);
 
 // ---------------------------------------------------------------------------
 // API Transaction Manager
