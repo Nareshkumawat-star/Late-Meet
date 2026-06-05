@@ -15,7 +15,7 @@ let isStopping = false;
 let isDrainingQueue = false;
 
 const VAD_SAMPLE_MS = 250;
-const WAVEFORM_INTERVAL_MS = 50;
+const WAVEFORM_INTERVAL_MS = 100;
 const WAVEFORM_BUCKETS = 32;
 const WAVEFORM_GAIN = 6;
 const SILENCE_FLUSH_MS = 1500;
