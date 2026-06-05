@@ -669,7 +669,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const text = escapeHtml(entry.text || "");
 
         return `
-         <div class="transcript-entry ${isAudio ? "audio-source" : ""}">  /*isAudio is boolean - safe */
+        <div class="transcript-entry ${isAudio ? "audio-source" : ""}"> 
           <div class="transcript-time">${timeStr}</div>
           <div class="transcript-avatar">${isAudio ? "🎙" : initials}</div>
           <div class="transcript-body">
@@ -899,22 +899,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         .join("");
 
       // Wire up export buttons
+      function handleExportClick(btn: HTMLButtonElement) {
+        const sessionId = btn.dataset.sessionId;
+        const session = sessions.find((s: State) => (s as any).id === sessionId);
+        if (session) exportSessionMarkdown(session);
+      }
+
       container
         .querySelectorAll<HTMLButtonElement>(".session-export-btn:not(.session-download-btn)")
         .forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const sessionId = btn.dataset.sessionId;
-            const session = sessions.find((s: State) => (s as any).id === sessionId);
-            if (session) exportSessionMarkdown(session);
-          });
+          btn.addEventListener("click", () => handleExportClick(btn));
         });
 
+      function handleDownloadClick(btn: HTMLButtonElement) {
+        const sessionId = btn.dataset.sessionId;
+        const session = sessions.find((s: State) => (s as any).id === sessionId);
+        if (session) downloadSessionMarkdown(session);
+      }
+
       container.querySelectorAll<HTMLButtonElement>(".session-download-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const sessionId = btn.dataset.sessionId;
-          const session = sessions.find((s: State) => (s as any).id === sessionId);
-          if (session) downloadSessionMarkdown(session);
-        });
+        btn.addEventListener("click", () => handleDownloadClick(btn));
       });
 
       // Wire up delete buttons
