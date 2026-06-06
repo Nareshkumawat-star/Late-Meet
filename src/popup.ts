@@ -210,6 +210,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    // Check if ElevenLabs API key exists before starting
+    const creds = await getApiCredentials();
+    if (!creds.elevenlabs_api_key) {
+      if (textEl) {
+        textEl.textContent = "⚠️ Missing ElevenLabs Key";
+        setTimeout(() => {
+          if (textEl) textEl.textContent = originalText;
+        }, 2000);
+      }
+      return; // Stop here - don't start recording
+    }
+    // ========== END OF ADDED CODE ==========
+
     try {
       // Show loading state
       btn.disabled = true;
