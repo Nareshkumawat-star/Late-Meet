@@ -136,11 +136,20 @@ export async function renderOnboarding(container: HTMLElement) {
         if (creds.elevenlabs_api_key) elevenInput.value = creds.elevenlabs_api_key;
       })();
 
-      async function ensureUnlocked(): Promise<boolean> {
-        if (isUnlocked()) return true;
+      type UnlockResult = { unlocked: true } | { unlocked: false; reason: "missing" | "wrong" };
+
+      async function ensureUnlocked(): Promise<UnlockResult> {
+        if (isUnlocked()) return { unlocked: true };
         const pass = passInput.value;
-        if (!pass) return false;
-        return await unlockCredentials(pass);
+        if (!pass) return { unlocked: false, reason: "missing" };
+        const ok = await unlockCredentials(pass);
+        return ok ? { unlocked: true } : { unlocked: false, reason: "wrong" };
+      }
+
+      function unlockFailureMessage(reason: "missing" | "wrong"): string {
+        return reason === "missing"
+          ? "Enter an encryption passphrase to save this API key."
+          : "Incorrect passphrase — please try again.";
       }
 
       valOpenBtn.addEventListener("click", async () => {
@@ -149,8 +158,9 @@ export async function renderOnboarding(container: HTMLElement) {
         try {
           const ok = await validateOpenAIKey(key);
           if (ok) {
-            if (!(await ensureUnlocked())) {
-              openaiStatus.textContent = "Enter an encryption passphrase to save this API key.";
+            const result = await ensureUnlocked();
+            if (!result.unlocked) {
+              openaiStatus.textContent = unlockFailureMessage(result.reason);
               return;
             }
             await saveApiCredentials({ openai_api_key: key });
@@ -169,8 +179,9 @@ export async function renderOnboarding(container: HTMLElement) {
         try {
           const ok = await validateElevenLabsKey(key);
           if (ok) {
-            if (!(await ensureUnlocked())) {
-              elevenStatus.textContent = "Enter an encryption passphrase to save this API key.";
+            const result = await ensureUnlocked();
+            if (!result.unlocked) {
+              elevenStatus.textContent = unlockFailureMessage(result.reason);
               return;
             }
             await saveApiCredentials({ elevenlabs_api_key: key });
