@@ -679,7 +679,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (noticeText) {
       const noticeDiv = document.createElement("div");
       noticeDiv.className = "truncated-notice";
-      noticeDiv.textContent = noticeText.replace(/<\/?[^>]+(>|$)/g, "");
+      noticeDiv.textContent = noticeText.replace(/<[^>]*>/g, "");
       container.appendChild(noticeDiv);
     }
     decisions.forEach((d) => {
@@ -782,7 +782,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (noticeText) {
       const noticeDiv = document.createElement("div");
       noticeDiv.className = "truncated-notice";
-      noticeDiv.textContent = noticeText.replace(/<\/?[^>]+(>|$)/g, "");
+      noticeDiv.textContent = noticeText.replace(/<[^>]*>/g, "");
       container.appendChild(noticeDiv);
     }
     actions.forEach((a, idx) => {
@@ -1083,7 +1083,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!noticeText) return;
     const noticeDiv = document.createElement("div");
     noticeDiv.className = "truncated-notice";
-    noticeDiv.textContent = noticeText.replace(/<\/?[^>]+(>|$)/g, "");
+    noticeDiv.textContent = noticeText.replace(/<[^>]*>/g, "");
     transcriptContainer.appendChild(noticeDiv);
   }
 
