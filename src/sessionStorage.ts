@@ -17,16 +17,36 @@ type StorageArea = Pick<chrome.storage.StorageArea, "get" | "set" | "remove"> & 
 };
 
 /**
+ * Normalizes a raw timestamp value to a numeric Unix millisecond timestamp.
+ * Accepts numbers directly, numeric strings, and ISO date strings. Returns
+ * `null` when the value cannot be converted to a finite number.
+ * @param value - The raw timestamp to normalize.
+ * @returns A finite numeric timestamp, or `null` if conversion fails.
+ */
+function normalizeTimestamp(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
+
+  const parsed = Number(value);
+  if (Number.isFinite(parsed)) return parsed;
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+/**
  * Coerces an unknown value to a `StoredSession` if it has the required fields,
- * or returns `null` if the value does not conform to the shape.
- * @param value - The raw value to validate.
+ * normalizing the `savedAt` timestamp in the process. Returns `null` when the
+ * value does not conform to the expected shape.
+ * @param value - The raw value to validate and coerce.
  * @returns A `StoredSession` object or `null`.
  */
 function asStoredSession(value: unknown): StoredSession | null {
   if (!value || typeof value !== "object") return null;
-  const session = value as Partial<StoredSession>;
-  if (!session.id || !session.savedAt) return null;
-  return session as StoredSession;
+  const session = value as Partial<StoredSession> & { savedAt?: unknown };
+  const savedAt = normalizeTimestamp(session.savedAt);
+  if (!session.id || savedAt === null) return null;
+  return { ...session, savedAt } as StoredSession;
 }
 
 /**
@@ -101,7 +121,12 @@ export function upsertSessionIndex(
  */
 async function getBytesInUse(storage: StorageArea, keys?: string | string[] | null) {
   if (!storage.getBytesInUse) return 0;
-  return storage.getBytesInUse(keys ?? null);
+  try {
+    return await storage.getBytesInUse(keys ?? null);
+  } catch (err) {
+    console.warn("[SessionStorage] Failed to get bytes in use:", err);
+    return 0;
+  }
 }
 
 /**
@@ -221,16 +246,17 @@ export async function persistMeetingSession(
   const currentIndex =
     indexedSessions.length > 0 ? indexedSessions : legacySessions.map(createSessionListItem);
 
-  if (currentIndex.some((session) => session.id === pendingSession.id)) {
-    return pendingSession;
-  }
-
   const sessionKey = getSavedSessionKey(pendingSession.id);
   const incomingBytes = estimateStorageBytes({
     [sessionKey]: pendingSession,
     [SAVED_SESSION_INDEX_KEY]: upsertSessionIndex(currentIndex, pendingSession),
   });
-  const prunedIndex = await pruneSessionsForQuota(storage, currentIndex, incomingBytes);
+  let prunedIndex = currentIndex;
+  try {
+    prunedIndex = await pruneSessionsForQuota(storage, currentIndex, incomingBytes);
+  } catch (err) {
+    console.error("[SessionStorage] Failed to prune sessions for quota:", err);
+  }
   const nextIndex = upsertSessionIndex(prunedIndex, pendingSession);
 
   await storage.set({
