@@ -42,6 +42,7 @@ export function findParticipant(name: string, participants: string[]): string | 
 export function sanitizeDisplayName(name: string): string {
   return name
     .normalize("NFC")
+    .slice(0, 100) // Truncate before encoding to avoid splitting entities
     .replace(
       /[<>&"']/g,
       (c) =>
@@ -50,8 +51,7 @@ export function sanitizeDisplayName(name: string): string {
           ">": "&gt;",
           "&": "&amp;",
           '"': "&quot;",
-          "'": "&#39;",
+          "'": "&`#39`;",
         })[c] ?? c,
-    )
-    .slice(0, 100); // Max 100 chars
+    );
 }
