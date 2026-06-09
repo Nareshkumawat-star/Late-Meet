@@ -937,15 +937,18 @@ body::-webkit-scrollbar-thumb,
   flex-shrink: 0;
   margin-top: -2px;
   opacity: 0;
+  pointer-events: none;
 }
 
 .transcript-entry:hover .copy-transcript-btn {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .copy-transcript-btn:focus-within,
 .copy-transcript-btn:focus {
   opacity: 1;
+  pointer-events: auto;
   background: var(--bg-card);
   border-color: var(--border-sub);
   color: var(--text-main);
