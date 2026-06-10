@@ -80,19 +80,20 @@
 - [The Problem](#-the-problem)
 - [Our Solution](#-our-solution)
 - [Features](#-features)
-- [Screenshots & Workflow](#️-screenshots--workflow)
-- [Architecture](#️-architecture)
+- [Screenshots & Workflow](#️screenshots--workflow)
+- [Architecture](#️architecture)
 - [Project Structure](#-project-structure)
-- [Installation](#️-installation)
+- [Installation](#️installation)
   - [Quick Install (For Regular Users)](#quick-install-for-regular-users)
   - [Developer Setup (For Contributors)](#-developer-setup-for-contributors)
 - [API Key Setup](#-api-key-setup)
-- [Tech Stack](#️-tech-stack)
-- [Roadmap](#️-roadmap)
+- [Tech Stack](#️tech-stack)
+- [Roadmap](#️roadmap)
 - [Contributing — GSSoC 2026](#-contributing--gssoc-2026)
 - [Documentation Hub](#-documentation-hub)
 - [Known Issues](#-known-issues)
-- [Keyboard Shortcuts](#️-keyboard-shortcuts)
+- [Extension Shortcuts](#️Extension-shortcuts)
+- [Global Shortcuts](#Global-shortcuts)
 - [Security & Privacy](#-security--privacy)
 - [FAQ](#-faq)
 - [Community](#-community)
@@ -728,7 +729,7 @@ Before submitting, verify all boxes:
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## Extension Shortcuts
 
 Control Late Meet without touching your mouse — perfect for accessibility and power users.
 
@@ -956,7 +957,7 @@ _Made with 🖤 by the Late Meet community · [Report Bug](https://github.com/sh
 
 ---
 
-## Keyboard Shortcuts
+## Global Shortcuts
 
 | Shortcut      | Action                       |
 | ------------- | ---------------------------- |
