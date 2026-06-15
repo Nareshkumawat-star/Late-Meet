@@ -269,7 +269,6 @@ const state: State = {
   participantCount: 0,
   tokensUsed: 0,
   estimatedCost: 0,
-  speakerStats: {},
 };
 
 async function trackUsage(delta: UsageDelta) {
@@ -529,7 +528,6 @@ function resetState() {
   selfParticipantName = null;
   state.tokensUsed = 0;
   state.estimatedCost = 0;
-  state.speakerStats = {};
 }
 
 function addTimeline(event: string) {
@@ -545,41 +543,13 @@ function getDuration() {
   return Math.round((Date.now() - state.startTime) / 1000);
 }
 
-function computeSpeakerStats(transcript: any[], totalDuration: number): Record<string, number> {
-  const stats: Record<string, number> = {};
-  if (!transcript || transcript.length === 0) return stats;
-
-  let lastTimestamp = 0;
-  for (let i = 0; i < transcript.length; i++) {
-    const entry = transcript[i];
-    const speaker = entry.speaker || "Unknown";
-    const currentTimestamp = entry.timestamp || 0;
-    const duration = Math.max(0, currentTimestamp - lastTimestamp);
-    stats[speaker] = (stats[speaker] || 0) + duration;
-    lastTimestamp = currentTimestamp;
-  }
-
-  const lastEntry = transcript[transcript.length - 1];
-  if (lastEntry && totalDuration > lastTimestamp) {
-    const speaker = lastEntry.speaker || "Unknown";
-    const duration = totalDuration - lastTimestamp;
-    stats[speaker] = (stats[speaker] || 0) + duration;
-  }
-
-  return stats;
-}
-
 function snapshot() {
-  const duration = getDuration();
-  const speakerStats = computeSpeakerStats(state.transcript, duration);
-  state.speakerStats = speakerStats;
-
   return {
     isActive: state.isActive,
     meetingId: state.meetingId,
     meetingUrl: state.meetingUrl,
     startTime: state.startTime,
-    duration,
+    duration: getDuration(),
     summary: state.summary,
     summaryItems: state.summaryItems,
     topics: state.topics,
@@ -603,7 +573,6 @@ function snapshot() {
     pendingJoiners: [...(state.pendingJoiners ?? [])],
     tokensUsed: state.tokensUsed ?? 0,
     estimatedCost: state.estimatedCost ?? 0,
-    speakerStats,
   };
 }
 
@@ -683,7 +652,6 @@ async function loadTabState(tabId: number) {
   state.participantCount = tabState.participantCount ?? 0;
   state.tokensUsed = tabState.tokensUsed ?? 0;
   state.estimatedCost = tabState.estimatedCost ?? 0;
-  state.speakerStats = tabState.speakerStats ?? {};
   pendingJoinersInFlight.clear();
 }
 

@@ -276,10 +276,8 @@ document.addEventListener("DOMContentLoaded", async () => {
               lastState?.lateJoiners || [],
               lastState?.meetingUrl || null,
             );
-          else if (tabId === "timeline") {
-            updateTimeline(lastState?.timeline || []);
-            updateSpeakerStats(lastState?.speakerStats || {});
-          } else if (tabId === "transcript") updateTranscript(lastState?.transcript || []);
+          else if (tabId === "timeline") updateTimeline(lastState?.timeline || []);
+          else if (tabId === "transcript") updateTranscript(lastState?.transcript || []);
           else if (tabId === "history" || tabId === "sessions") loadMeetingHistory();
           else if (tabId === "usage") {
             const usageContainer = document.getElementById("sidepanel-usage-container");
@@ -566,10 +564,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       updatePeople(state.participants, state.lateJoiners, state.meetingUrl);
 
     // Timeline Tab
-    if (loadedTabs.has("timeline")) {
-      updateTimeline(state.timeline);
-      updateSpeakerStats(state.speakerStats);
-    }
+    if (loadedTabs.has("timeline")) updateTimeline(state.timeline);
 
     // Transcript Tab
     if (loadedTabs.has("transcript")) updateTranscript(state.transcript);
@@ -1040,62 +1035,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       `;
         })
         .join("");
-  }
-
-  function updateSpeakerStats(speakerStats: Record<string, number> | undefined) {
-    const container = document.getElementById("dash-speaking-time");
-    if (!container) return;
-
-    if (!speakerStats || Object.keys(speakerStats).length === 0) {
-      container.innerHTML = `<div class="empty-msg">Speaking breakdown will build as the meeting progresses</div>`;
-      return;
-    }
-
-    let totalTime = 0;
-    for (const speaker of Object.keys(speakerStats)) {
-      totalTime += speakerStats[speaker];
-    }
-
-    if (totalTime === 0) {
-      container.innerHTML = `<div class="empty-msg">Speaking breakdown will build as the meeting progresses</div>`;
-      return;
-    }
-
-    const sortedSpeakers = Object.keys(speakerStats).sort(
-      (a, b) => speakerStats[b] - speakerStats[a],
-    );
-
-    container.innerHTML = sortedSpeakers
-      .map((speaker) => {
-        const seconds = speakerStats[speaker];
-        const percentage = Math.round((seconds / totalTime) * 100);
-
-        let timeStr = "";
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
-
-        if (hours > 0) {
-          timeStr += `${hours}h `;
-        }
-        if (minutes > 0 || hours > 0) {
-          timeStr += `${minutes}m `;
-        }
-        timeStr += `${secs}s`;
-
-        return `
-          <div class="speaker-bar-row" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; padding: 0 16px;">
-            <div class="speaker-bar-info" style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-main);">
-              <span class="speaker-name" style="font-weight: 500;">${escapeHtml(speaker)}</span>
-              <span class="speaker-time" style="font-variant-numeric: tabular-nums; color: var(--text-sub);">${timeStr} (${percentage}%)</span>
-            </div>
-            <div class="speaker-bar-container" style="height: 8px; background: var(--bg-app); border-radius: 4px; overflow: hidden; border: 1px solid var(--border-sub);">
-              <div class="speaker-bar-fill" style="height: 100%; width: ${percentage}%; background: hsl(var(--accent-color)); border-radius: 4px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-            </div>
-          </div>
-        `;
-      })
-      .join("");
   }
 
   function getTimelineIcon(event: string) {
