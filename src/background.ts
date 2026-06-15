@@ -774,7 +774,11 @@ async function executeBroadcast() {
       isActive: fullSnapshot.isActive,
       audioActive: fullSnapshot.audioActive,
     };
-    const tabs = await chrome.tabs.query({ url: "https://meet.google.com/*" });
+    const meetTabs = await chrome.tabs.query({ url: "https://meet.google.com/*" });
+    const zoomTabs1 = await chrome.tabs.query({ url: "https://*.zoom.us/wc/*" });
+    const zoomTabs2 = await chrome.tabs.query({ url: "https://zoom.us/wc/*" });
+    const tabs = [...meetTabs, ...zoomTabs1, ...zoomTabs2];
+
     for (const tab of tabs) {
       if (tab.id !== undefined) {
         chrome.tabs
@@ -1337,7 +1341,7 @@ async function processQueuedAudioChunk({ id, item }: AudioChunkQueueItem<QueuedA
   }
 
   const prompt = getTranscriptionPrompt();
-  let rawText: string | null = null;
+  let rawText: string | null;
   try {
     rawText = await transcribeChunk(item.audioBase64, item.mimeType, prompt);
   } catch (err) {
@@ -1790,7 +1794,11 @@ async function startAudioCapture(
 
 async function scanForMeetTabs() {
   try {
-    const tabs = await chrome.tabs.query({ url: "https://meet.google.com/*" });
+    const meetTabs = await chrome.tabs.query({ url: "https://meet.google.com/*" });
+    const zoomTabs1 = await chrome.tabs.query({ url: "https://*.zoom.us/wc/*" });
+    const zoomTabs2 = await chrome.tabs.query({ url: "https://zoom.us/wc/*" });
+    const tabs = [...meetTabs, ...zoomTabs1, ...zoomTabs2];
+
     if (tabs.length > 0) {
       for (const tab of tabs) {
         const meetingId = getMeetingIdFromUrl(tab.url);
