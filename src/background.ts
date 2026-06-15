@@ -270,6 +270,7 @@ const state: State = {
   tokensUsed: 0,
   estimatedCost: 0,
   speakerStats: {},
+  transcriptionLanguage: "",
 };
 
 async function trackUsage(delta: UsageDelta) {
@@ -530,6 +531,7 @@ function resetState() {
   state.tokensUsed = 0;
   state.estimatedCost = 0;
   state.speakerStats = {};
+  state.transcriptionLanguage = "";
 }
 
 function addTimeline(event: string) {
@@ -604,6 +606,7 @@ function snapshot() {
     tokensUsed: state.tokensUsed ?? 0,
     estimatedCost: state.estimatedCost ?? 0,
     speakerStats,
+    transcriptionLanguage: state.transcriptionLanguage,
   };
 }
 
@@ -684,6 +687,7 @@ async function loadTabState(tabId: number) {
   state.tokensUsed = tabState.tokensUsed ?? 0;
   state.estimatedCost = tabState.estimatedCost ?? 0;
   state.speakerStats = tabState.speakerStats ?? {};
+  state.transcriptionLanguage = tabState.transcriptionLanguage ?? "";
   pendingJoinersInFlight.clear();
 }
 
@@ -889,6 +893,15 @@ async function transcribeChunk(base64Audio: string, mimeType = "audio/webm", pro
       const formData = new FormData();
       formData.append("file", blob, `audio.${extension}`);
       formData.append("model_id", ELEVENLABS_STT_MODEL);
+
+      try {
+        const settings = await getSettings();
+        if (settings && settings.transcriptionLanguage) {
+          formData.append("language_code", settings.transcriptionLanguage);
+        }
+      } catch (settingsErr) {
+        console.warn("[LateMeet] Failed to read transcriptionLanguage settings:", settingsErr);
+      }
 
       const transcript = await apiQueue.enqueue("elevenlabs-stt", async () => {
         const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
