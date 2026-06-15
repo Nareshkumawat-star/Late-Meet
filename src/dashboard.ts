@@ -349,6 +349,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         waveformStatusEl.classList.add("active");
       }
     }
+    if (message.type === "RECOVERY_TOAST" && typeof message.count === "number") {
+      showToast(`Reconnected — recovering ${message.count} chunks`, "success");
+    }
   });
 
   // ——— Start Audio Capture (User Gesture via tabCapture) ———
