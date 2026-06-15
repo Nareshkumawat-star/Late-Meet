@@ -894,6 +894,14 @@ async function transcribeChunk(base64Audio: string, mimeType = "audio/webm", pro
         "[LateMeet] ElevenLabs transcription failed. Aborting fallback to Whisper for privacy reasons:",
         err,
       );
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+      if (
+        isOffline ||
+        err instanceof TypeError ||
+        String(err).toLowerCase().includes("failed to fetch")
+      ) {
+        throw err;
+      }
       return null;
     }
   }
@@ -1297,7 +1305,31 @@ async function processQueuedAudioChunk({ id, item }: AudioChunkQueueItem<QueuedA
   }
 
   const prompt = getTranscriptionPrompt();
-  const rawText = await transcribeChunk(item.audioBase64, item.mimeType, prompt);
+  let rawText: string | null = null;
+  try {
+    rawText = await transcribeChunk(item.audioBase64, item.mimeType, prompt);
+  } catch (err) {
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+    if (
+      isOffline ||
+      err instanceof TypeError ||
+      String(err).toLowerCase().includes("failed to fetch")
+    ) {
+      console.warn(
+        `[LateMeet] Network error processing chunk ${id}, pushing to pendingChunks queue`,
+      );
+      try {
+        const data = await chrome.storage.local.get("pendingChunks");
+        const queue = (data.pendingChunks || []) as QueuedAudioChunk[];
+        queue.push(item);
+        await chrome.storage.local.set({ pendingChunks: queue });
+      } catch (storageErr) {
+        console.error("[LateMeet] Failed to save pending chunk:", storageErr);
+      }
+      return;
+    }
+    throw err;
+  }
 
   if (!rawText) {
     console.warn(`[LateMeet] STT returned empty for queued chunk ${id}`);
@@ -2350,6 +2382,34 @@ chrome.runtime.onSuspend.addListener(() => {
   };
   chrome.storage.local.set({ activeMeetingGuards: guards }).catch(() => {});
 });
+
+async function flushPendingChunks() {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return;
+
+  try {
+    const data = await chrome.storage.local.get("pendingChunks");
+    const queue = (data.pendingChunks || []) as QueuedAudioChunk[];
+    if (queue.length === 0) return;
+
+    console.log(`[LateMeet] Online! Flushing ${queue.length} pending chunks.`);
+
+    for (const item of queue) {
+      if (state.isActive) {
+        audioChunkQueue.enqueue(item);
+      }
+    }
+
+    await chrome.storage.local.remove("pendingChunks");
+
+    chrome.runtime.sendMessage({ type: "RECOVERY_TOAST", count: queue.length }).catch(() => {});
+  } catch (err) {
+    console.error("[LateMeet] Failed to flush pending chunks:", err);
+  }
+}
+
+if (typeof self !== "undefined") {
+  self.addEventListener("online", flushPendingChunks);
+}
 
 // Proactive scan on startup/load
 hydrateState()
