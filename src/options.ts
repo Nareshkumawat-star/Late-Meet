@@ -29,6 +29,7 @@ interface KnownSettings {
   transcriptRefinement?: boolean;
   theme?: "system" | "light" | "dark";
   accent?: string;
+  transcriptionLanguage?: string;
 }
 
 /**
@@ -152,6 +153,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const aiModelSelect = document.getElementById("ai-model") as HTMLSelectElement | null;
   if (aiModelSelect && settings.aiModel) {
     aiModelSelect.value = settings.aiModel;
+  }
+
+  // Transcription Language
+  const languageSelect = document.getElementById(
+    "transcription-language",
+  ) as HTMLSelectElement | null;
+  if (languageSelect && settings.transcriptionLanguage !== undefined) {
+    languageSelect.value = settings.transcriptionLanguage;
   }
 
   // Feature toggles
@@ -399,6 +408,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Save theme selections into the global config tree bundle block
         theme: (themeSelect?.value as Settings["theme"]) || "system",
         accent: selectedAccentColor,
+        transcriptionLanguage:
+          (document.getElementById("transcription-language") as HTMLSelectElement)?.value || "",
       };
 
       await chrome.storage.local.set({ settings: newSettings });
@@ -416,15 +427,22 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (status) {
             status.style.color = "red";
             status.textContent = !isOpenAIValid
-              ? "Settings saved, but the OpenAI API key is invalid."
-              : "Settings saved, but the ElevenLabs API key is invalid.";
+              ? "Invalid OpenAI API key. Please check and try again."
+              : "Invalid ElevenLabs API key. Please check and try again.";
             status.classList.add("visible");
             setTimeout(() => status.classList.remove("visible"), 4000);
           }
+          saveBtn.disabled = false;
+          saveBtn.textContent = originalText;
           return;
         }
 
-        await saveApiCredentials({ openai_api_key: openaiKey, elevenlabs_api_key: elevenlabsKey });
+        const credentialsToSave: { openai_api_key?: string; elevenlabs_api_key?: string } = {};
+        if (openaiKey) credentialsToSave.openai_api_key = openaiKey;
+        if (elevenlabsKey) credentialsToSave.elevenlabs_api_key = elevenlabsKey;
+        if (Object.keys(credentialsToSave).length > 0) {
+          await saveApiCredentials(credentialsToSave);
+        }
         credentialsSaved = true;
       }
 

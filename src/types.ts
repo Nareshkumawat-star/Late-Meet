@@ -102,6 +102,7 @@ export interface State {
   tokensUsed?: number;
   estimatedCost?: number;
   speakerStats?: Record<string, number>;
+  transcriptionLanguage?: string;
 }
 
 /** Storage metadata summary for a single saved meeting, used in storage usage reports. */
