@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const languageSelect = document.getElementById(
     "transcription-language",
   ) as HTMLSelectElement | null;
-  if (languageSelect && settings.transcriptionLanguage) {
+  if (languageSelect && settings.transcriptionLanguage !== undefined) {
     languageSelect.value = settings.transcriptionLanguage;
   }
 
