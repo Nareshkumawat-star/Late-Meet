@@ -427,15 +427,22 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (status) {
             status.style.color = "red";
             status.textContent = !isOpenAIValid
-              ? "Settings saved, but the OpenAI API key is invalid."
-              : "Settings saved, but the ElevenLabs API key is invalid.";
+              ? "Invalid OpenAI API key. Please check and try again."
+              : "Invalid ElevenLabs API key. Please check and try again.";
             status.classList.add("visible");
             setTimeout(() => status.classList.remove("visible"), 4000);
           }
+          saveBtn.disabled = false;
+          saveBtn.textContent = originalText;
           return;
         }
 
-        await saveApiCredentials({ openai_api_key: openaiKey, elevenlabs_api_key: elevenlabsKey });
+        const credentialsToSave: { openai_api_key?: string; elevenlabs_api_key?: string } = {};
+        if (openaiKey) credentialsToSave.openai_api_key = openaiKey;
+        if (elevenlabsKey) credentialsToSave.elevenlabs_api_key = elevenlabsKey;
+        if (Object.keys(credentialsToSave).length > 0) {
+          await saveApiCredentials(credentialsToSave);
+        }
         credentialsSaved = true;
       }
 
