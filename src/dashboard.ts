@@ -65,6 +65,10 @@ function normalizeActionItem(input: unknown): ActionItem | null {
     task,
     owner: String(raw.owner ?? "").trim() || undefined,
     deadline: String(raw.deadline ?? "").trim() || undefined,
+    assignee:
+      raw.assignee !== undefined ? (raw.assignee ? String(raw.assignee).trim() : null) : undefined,
+    dueHint:
+      raw.dueHint !== undefined ? (raw.dueHint ? String(raw.dueHint).trim() : null) : undefined,
     confidence: typeof raw.confidence === "number" ? raw.confidence : undefined,
     isSpeculative: typeof raw.isSpeculative === "boolean" ? raw.isSpeculative : undefined,
   } as ActionItem;
@@ -823,6 +827,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!task) return;
       const owner = normalized?.owner ?? "";
       const deadline = normalized?.deadline ?? "";
+      const assignee = normalized?.assignee ?? null;
+      const dueHint = normalized?.dueHint ?? null;
       const statusKey = buildActionStatusKey(currentMeetingId, task);
       const done = actionStatuses.get(statusKey) === true;
       const cbId = `action-cb-${idx}`;
@@ -862,20 +868,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       label.appendChild(taskDiv);
 
-      if (owner) {
-        const ownerSpan = document.createElement("span");
-        ownerSpan.className = "action-owner";
-        ownerSpan.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" style="margin-right:2px"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-        ownerSpan.appendChild(document.createTextNode(owner));
-        label.appendChild(ownerSpan);
+      const activeAssignee = assignee || owner;
+      if (activeAssignee) {
+        const assigneeSpan = document.createElement("span");
+        assigneeSpan.className = "action-assignee";
+        assigneeSpan.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon" style="margin-right:3px; vertical-align: middle;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+        assigneeSpan.appendChild(document.createTextNode(activeAssignee));
+        label.appendChild(assigneeSpan);
       }
 
-      if (deadline) {
-        const deadlineDiv = document.createElement("div");
-        deadlineDiv.className = "action-deadline";
-        deadlineDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" style="margin-right:2px"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>`;
-        deadlineDiv.appendChild(document.createTextNode(deadline));
-        label.appendChild(deadlineDiv);
+      const activeDue = dueHint || deadline;
+      if (activeDue) {
+        const dueSpan = document.createElement("span");
+        dueSpan.className = "action-due";
+        dueSpan.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" style="margin-right:3px; vertical-align: middle;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>`;
+        dueSpan.appendChild(document.createTextNode(activeDue));
+        label.appendChild(dueSpan);
       }
 
       const timestampLabel = a.timestampLabel || a.timestamp;
@@ -923,11 +931,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         e.stopPropagation();
         const checkMark = checkbox.checked ? "[x]" : "[ ]";
         let copyText = `${checkMark} ${task}`;
-        if (owner) {
-          copyText += ` - Assignee: ${owner}`;
+        const activeAssignee = assignee || owner;
+        const activeDue = dueHint || deadline;
+        if (activeAssignee) {
+          copyText += ` - Assignee: ${activeAssignee}`;
         }
-        if (deadline) {
-          copyText += ` (Due: ${deadline})`;
+        if (activeDue) {
+          copyText += ` (Due: ${activeDue})`;
         }
         navigator.clipboard
           .writeText(copyText)

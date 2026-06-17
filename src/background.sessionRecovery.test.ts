@@ -30,7 +30,7 @@ const SEEDED_STATE = {
   summaryItems: [{ text: "Discussed roadmap", timestamp: "00:10" }],
   topics: [{ name: "Roadmap", status: "active" }],
   decisions: [{ text: "Ship the beta" }],
-  actionItems: [{ task: "Email the team" }],
+  actionItems: [{ task: "Email the team", assignee: "Alice", dueHint: "by Friday" }],
   currentTopic: "Roadmap",
   sentiment: "positive",
   keyInsights: [{ text: "Strong consensus", confidenceScore: 0.9 }],
@@ -172,8 +172,12 @@ test("recovers AI-derived meeting content", async () => {
     ["Ship the beta"],
   );
   assert.deepEqual(
-    (state.actionItems as AnyRecord[]).map((a) => a.task),
-    ["Email the team"],
+    (state.actionItems as AnyRecord[]).map((a) => ({
+      task: a.task,
+      assignee: a.assignee,
+      dueHint: a.dueHint,
+    })),
+    [{ task: "Email the team", assignee: "Alice", dueHint: "by Friday" }],
   );
   assert.deepEqual(state.unresolvedDiscussions, ["Pricing tiers"]);
   assert.deepEqual(state.questionsRaised, ["When do we launch?"]);

@@ -1147,7 +1147,7 @@ async function summarizeTranscriptIfNeeded() {
         : []),
       ...(actionExtractionEnabled
         ? [
-            '"actionItems": [{"task": "Action 1", "chunkId": "chunk_12", "timestamp": "00:08", "timestampLabel": "00:08", "confidence": "high|medium|low", "isSpeculative": false}]',
+            '"actionItems": [{"task": "Action 1", "assignee": "John Doe|null", "dueHint": "by Friday|null", "chunkId": "chunk_12", "timestamp": "00:08", "timestampLabel": "00:08", "confidence": "high|medium|low", "isSpeculative": false}]',
           ]
         : []),
       ...(sentimentAnalysisEnabled ? ['"sentiment": "positive|neutral|negative|mixed"'] : []),
@@ -1167,7 +1167,7 @@ OUTPUT GUIDELINES:
 - Extract only the fields requested by the user prompt.
 ${topicDetectionEnabled ? "- Identify distinct topics and their statuses (active/completed/unresolved)." : ""}
 ${decisionDetectionEnabled ? "- Precisely capture decisions. Classify as 'tentative' if there are hedging phrases (maybe, probably), otherwise 'finalized'." : ""}
-${actionExtractionEnabled ? "- Precisely capture action items. Rate confidence (high/medium/low). Prevent speculative statements from appearing as confirmed by setting isSpeculative to true." : ""}
+${actionExtractionEnabled ? "- Precisely capture action items. Rate confidence (high/medium/low). Prevent speculative statements from appearing as confirmed by setting isSpeculative to true. Extract who is assigned to the task (as 'assignee') and when it is due or any deadline hint (as 'dueHint'), using null for either if not specified." : ""}
 ${sentimentAnalysisEnabled ? "- Detect the prevailing sentiment and emotional dynamics." : ""}
 - Use the transcript chunk identifiers and timestamps provided to reference the source of each item.
 - Extract "Key Insights" with a confidenceScore (0-100) based on linguistic certainty.

@@ -47,6 +47,8 @@ export interface ActionItem {
   task: string;
   owner?: string;
   deadline?: string;
+  assignee?: string | null;
+  dueHint?: string | null;
   chunkId?: string;
   timestamp?: string;
   timestampLabel?: string;

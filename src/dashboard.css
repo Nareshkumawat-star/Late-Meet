@@ -614,6 +614,34 @@ body::-webkit-scrollbar-thumb,
   margin-top: 4px;
 }
 
+.action-assignee {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--bg-app);
+  background: hsl(var(--accent-color));
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+  margin-right: 8px;
+  text-transform: capitalize;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.action-due {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-sub);
+  background: var(--bg-element);
+  border: 1px solid var(--border-sub);
+  padding: 1px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
 /* ——— Participants ——— */
 .participant-item {
   display: flex;
