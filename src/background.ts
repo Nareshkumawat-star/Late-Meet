@@ -1721,14 +1721,15 @@ async function startAudioCapture(
 
     if (createdSession) {
       resetState();
-      await chrome.storage.local.remove("activeMeetingState");
+      await chrome.storage.local.remove(["activeMeetingState", "activeMeetingGuards"]);
       state.isActive = true;
       state.startTime = Date.now();
       state.meetingId = meetingId || "unknown";
       state.meetingUrl = meetingUrl || null;
-      state.targetTabId = tabId;
       addTimeline(`Meeting started (${state.meetingId})`);
     }
+
+    state.targetTabId = tabId;
 
     let streamId = providedStreamId;
 
@@ -1841,7 +1842,7 @@ async function pollRemainingChunks(): Promise<void> {
   while (Date.now() - pollStart < POLL_TIMEOUT) {
     try {
       const pollResponse = await chrome.runtime.sendMessage({
-        type: "GET_REMAINING_CHUNKS",
+        type: "OFFSCREEN_GET_REMAINING_CHUNKS",
       });
       if (pollResponse && typeof pollResponse === "object") {
         const pending = pollResponse.pending ?? 0;
@@ -1887,7 +1888,7 @@ async function stopAudioCapture(reason = "Stopped") {
 
     resetState();
 
-    await chrome.storage.local.remove("activeMeetingState");
+    await chrome.storage.local.remove(["activeMeetingState", "activeMeetingGuards"]);
     await broadcastStateUpdate(true);
 
     if (stopPlan.shouldNotifySessionEnded) {
