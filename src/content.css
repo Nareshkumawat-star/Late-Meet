@@ -285,3 +285,58 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ——— Speaking While Muted Warning Toast ——— */
+#mc-muted-warning-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 99999999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(239, 68, 68, 0.15); /* Translucent warning red */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  color: #fca5a5;
+  font-family:
+    "Inter",
+    "Segoe UI",
+    -apple-system,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 12px;
+  animation: mc-toast-slidein 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+#mc-muted-warning-toast.mc-toast-fadeout {
+  animation: mc-toast-slideout 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mc-toast-slidein {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes mc-toast-slideout {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-40px);
+  }
+}

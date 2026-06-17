@@ -3,6 +3,7 @@ import {
   connectMicrophoneToOffscreenAudioGraph,
   createOffscreenAudioGraph,
   MICROPHONE_AUDIO_CONSTRAINTS,
+  OFFSCREEN_ANALYSER_FFT_SIZE,
 } from "./offscreenAudioGraph";
 
 let mediaStream: MediaStream | null = null;
@@ -11,6 +12,7 @@ let recorderStream: MediaStream | null = null;
 let mediaRecorder: MediaRecorder | null = null;
 let audioContext: AudioContext | null = null;
 let analyserNode: AnalyserNode | null = null;
+let micAnalyserNode: AnalyserNode | null = null;
 let vadTimer: ReturnType<typeof setInterval> | null = null;
 let waveformTimer: ReturnType<typeof setInterval> | null = null;
 let audioSources: MediaStreamAudioSourceNode[] = [];
@@ -102,6 +104,22 @@ function getCurrentRms(): number {
 
   const buffer = new Uint8Array(analyserNode.fftSize);
   analyserNode.getByteTimeDomainData(buffer);
+
+  let sumSquares = 0;
+
+  for (let i = 0; i < buffer.length; i += 1) {
+    const normalized = (buffer[i] - 128) / 128;
+    sumSquares += normalized * normalized;
+  }
+
+  return Math.sqrt(sumSquares / buffer.length);
+}
+
+function getMicRms(): number {
+  if (!micAnalyserNode) return 0;
+
+  const buffer = new Uint8Array(micAnalyserNode.fftSize);
+  micAnalyserNode.getByteTimeDomainData(buffer);
 
   let sumSquares = 0;
 
@@ -306,6 +324,7 @@ async function cleanupResources() {
 
   mediaRecorder = null;
   analyserNode = null;
+  micAnalyserNode = null;
   audioSources = [];
   pendingChunks = [];
   isStopping = false;
@@ -535,6 +554,10 @@ async function startCapture(
 
       audioSources.push(microphoneSource);
 
+      micAnalyserNode = audioContext.createAnalyser();
+      micAnalyserNode.fftSize = OFFSCREEN_ANALYSER_FFT_SIZE;
+      microphoneSource.connect(micAnalyserNode);
+
       microphoneStream.getTracks().forEach((track) => {
         track.onended = () => {
           console.warn("[LateMeet][offscreen] Microphone track ended unexpectedly");
@@ -572,6 +595,16 @@ async function startCapture(
     try {
       const rms = getCurrentRms();
       voiceActivity.observe(rms);
+
+      const micRms = getMicRms();
+      if (micAnalyserNode && micRms > rmsThreshold) {
+        chrome.runtime
+          .sendMessage({
+            type: "MICROPHONE_ACTIVITY",
+            rms: micRms,
+          })
+          .catch(() => {});
+      }
 
       if (rms < rmsThreshold) {
         silenceTicks++;

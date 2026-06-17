@@ -5,6 +5,7 @@ import {
 } from "./participantDetection.ts";
 
 import { initTheme } from "./theme.js";
+import { isLocalMicMuted } from "./utils/muteState.ts";
 
 void initTheme().catch((err) => console.error(err));
 
@@ -649,7 +650,61 @@ void initTheme().catch((err) => console.error(err));
     }
   });
 
+  let lastMuteWarningTime = 0;
+  const WARNING_COOLDOWN_MS = 15000;
+
+  function isLocalMicMutedInDOM(): boolean {
+    return isLocalMicMuted();
+  }
+
+  function showMutedWarningToast() {
+    const toastId = "mc-muted-warning-toast";
+    let toast = document.getElementById(toastId);
+    if (toast) return; // Warning already visible
+
+    toast = document.createElement("div");
+    toast.id = toastId;
+    toast.className = "mc-toast mc-toast-warning";
+
+    const icon = document.createElement("span");
+    icon.className = "mc-toast-icon";
+    icon.textContent = "🎙️⚠️";
+
+    const messageText = document.createElement("span");
+    messageText.className = "mc-toast-message";
+    messageText.textContent = "You appear to be speaking while muted";
+
+    toast.append(icon, messageText);
+    document.body.appendChild(toast);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      if (toast) {
+        toast.classList.add("mc-toast-fadeout");
+        setTimeout(() => {
+          toast?.remove();
+        }, 500);
+      }
+    }, 5000);
+  }
+
+  function handleMicrophoneActivity(_rms: number) {
+    if (isLocalMicMutedInDOM()) {
+      const now = Date.now();
+      if (now - lastMuteWarningTime >= WARNING_COOLDOWN_MS) {
+        lastMuteWarningTime = now;
+        showMutedWarningToast();
+      }
+    }
+  }
+
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === "MICROPHONE_ACTIVITY") {
+      handleMicrophoneActivity(message.rms);
+      sendResponse({ success: true });
+      return false;
+    }
+
     if (message?.type === "SHOW_BRIEF") {
       upsertBriefOverlay(message.briefContent, message.targetName);
       sendResponse({ success: true });

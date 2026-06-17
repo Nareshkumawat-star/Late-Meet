@@ -2059,6 +2059,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
+      case "MICROPHONE_ACTIVITY": {
+        if (state.isActive && state.targetTabId) {
+          try {
+            await chrome.tabs.sendMessage(state.targetTabId, {
+              type: "MICROPHONE_ACTIVITY",
+              rms: message.rms,
+            });
+          } catch {
+            // Ignore if content script is not loaded or ready
+          }
+        }
+        sendResponse({ success: true });
+        return;
+      }
+
       case "OFFSCREEN_LOG": {
         if (DEBUG) {
           console.log("[LateMeet][offscreen]", message.message);
