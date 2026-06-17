@@ -326,7 +326,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ——— Listen for State Updates ———
-  chrome.runtime.onMessage.addListener((message) => {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.type === "REQUEST_NEW_STREAM_ID") {
+      chrome.tabCapture.getMediaStreamId({ targetTabId: message.tabId }, (streamId) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse({ success: true, streamId });
+        }
+      });
+      return true; // Keep message channel open for asynchronous sendResponse
+    }
+    if (message.type === "SHOW_TOAST") {
+      showToast(message.text, message.toastType || "success");
+      return false;
+    }
     if (message.type === "STATE_UPDATE") {
       lastState = message.state;
       updateDashboard(message.state);
@@ -338,11 +352,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           waveformStatusEl.classList.remove("active");
         }
       }
+      return false;
     }
     if (message.type === "SESSION_ENDED") {
       // Dynamic load requested by human reviewer
       loadMeetingHistory();
       loadedTabs.delete("sessions");
+      return false;
     }
     if (message.type === "WAVEFORM_DATA" && Array.isArray(message.buckets)) {
       drawWaveform(message.buckets);
@@ -350,10 +366,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         waveformStatusEl.textContent = "LIVE";
         waveformStatusEl.classList.add("active");
       }
+      return false;
     }
     if (message.type === "RECOVERY_TOAST" && typeof message.count === "number") {
       showToast(`Reconnected — recovering ${message.count} chunks`, "success");
+      return false;
     }
+    return false;
   });
 
   // ——— Start Audio Capture (User Gesture via tabCapture) ———

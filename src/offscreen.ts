@@ -509,6 +509,41 @@ async function startCapture(
           .catch(() => {});
       }
     };
+
+    track.onmute = async () => {
+      console.warn("[LateMeet][offscreen] Media track muted");
+
+      if (isStopping) return;
+
+      isStopping = true;
+
+      try {
+        if (vadTimer) {
+          clearInterval(vadTimer);
+          vadTimer = null;
+        }
+
+        if (waveformTimer) {
+          clearInterval(waveformTimer);
+          waveformTimer = null;
+        }
+
+        await stopMediaRecorder();
+
+        await drainPendingChunks();
+        await cleanupResources();
+      } catch (err) {
+        console.error("[LateMeet][offscreen] Cleanup after track mute failed:", err);
+        await cleanupResources();
+      } finally {
+        await chrome.runtime
+          .sendMessage({
+            type: "UNEXPECTED_TRACK_END",
+            reason: "MediaTrack muted (possible layout change)",
+          })
+          .catch(() => {});
+      }
+    };
   });
 
   audioContext = new AudioContext();

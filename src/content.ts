@@ -526,6 +526,92 @@ void initTheme().catch((err) => console.error(err));
     lastActiveSpeakerName = null;
   }
 
+  let layoutCheckTimer: ReturnType<typeof setInterval> | null = null;
+  let lastLayoutSignature = "";
+
+  function showPageToast(message: string, duration = 6000) {
+    const toastId = "mc-page-toast";
+    let toast = document.getElementById(toastId);
+    if (toast) {
+      toast.remove();
+    }
+
+    toast = document.createElement("div");
+    toast.id = toastId;
+    toast.style.position = "fixed";
+    toast.style.bottom = "24px";
+    toast.style.left = "24px";
+    toast.style.backgroundColor = "#1E1E2E";
+    toast.style.color = "#CDD6F4";
+    toast.style.padding = "12px 16px";
+    toast.style.borderRadius = "8px";
+    toast.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+    toast.style.zIndex = "9999";
+    toast.style.fontFamily = "system-ui, sans-serif";
+    toast.style.fontSize = "14px";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.gap = "8px";
+    toast.style.border = "1px solid #f38ba8";
+    toast.style.transition = "opacity 0.3s ease";
+
+    const icon = document.createElement("span");
+    icon.textContent = "⚠️";
+
+    const text = document.createElement("span");
+    text.textContent = message;
+
+    toast.append(icon, text);
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast) {
+        toast.style.opacity = "0";
+        setTimeout(() => toast?.remove(), 300);
+      }
+    }, duration);
+  }
+
+  function checkLayoutChange() {
+    const tiles = Array.from(document.querySelectorAll(SELECTORS.participantTile.join(",")));
+    if (tiles.length === 0) return;
+
+    const sizes = tiles.map((tile) => {
+      const rect = tile.getBoundingClientRect();
+      return `${Math.round(rect.width / 20) * 20}x${Math.round(rect.height / 20) * 20}`;
+    });
+
+    sizes.sort();
+    const signature = sizes.join("|");
+
+    if (lastLayoutSignature && signature !== lastLayoutSignature) {
+      console.log(
+        `${COPILOT_PREFIX} Layout change detected:`,
+        lastLayoutSignature,
+        "->",
+        signature,
+      );
+      chrome.runtime.sendMessage({ type: "LAYOUT_CHANGED" }).catch(() => {});
+    }
+
+    lastLayoutSignature = signature;
+  }
+
+  function startLayoutChangeCheck() {
+    if (layoutCheckTimer) return;
+    lastLayoutSignature = "";
+    checkLayoutChange();
+    layoutCheckTimer = setInterval(checkLayoutChange, 2000);
+  }
+
+  function stopLayoutChangeCheck() {
+    if (layoutCheckTimer) {
+      clearInterval(layoutCheckTimer);
+      layoutCheckTimer = null;
+    }
+    lastLayoutSignature = "";
+  }
+
   function injectFloatingButton() {
     const existing = document.getElementById("mc-float-btn");
     if (existing) return;
@@ -610,6 +696,11 @@ void initTheme().catch((err) => console.error(err));
       activeSpeakerObserver.disconnect();
       activeSpeakerObserver = null;
     }
+
+    if (layoutCheckTimer) {
+      clearInterval(layoutCheckTimer);
+      layoutCheckTimer = null;
+    }
   }
 
   function destroyAll() {
@@ -641,6 +732,7 @@ void initTheme().catch((err) => console.error(err));
       // Re-initialize observation when resuming visibility
       startParticipantPolling();
       startActiveSpeakerDetection();
+      startLayoutChangeCheck();
       if (globalThis.location.pathname.length > 5 && !globalThis.location.pathname.includes("/_")) {
         injectFloatingButton();
       } else {
@@ -650,6 +742,12 @@ void initTheme().catch((err) => console.error(err));
   });
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === "SHOW_PAGE_TOAST") {
+      showPageToast(message.text);
+      sendResponse({ success: true });
+      return false;
+    }
+
     if (message?.type === "SHOW_BRIEF") {
       upsertBriefOverlay(message.briefContent, message.targetName);
       sendResponse({ success: true });
@@ -678,10 +776,12 @@ void initTheme().catch((err) => console.error(err));
       if (!isActive) {
         stopParticipantPolling();
         stopActiveSpeakerDetection();
+        stopLayoutChangeCheck();
       } else {
         // Restart polling/detection if a new session begins
         startParticipantPolling();
         startActiveSpeakerDetection();
+        startLayoutChangeCheck();
       }
 
       sendResponse({ success: true });
@@ -698,6 +798,7 @@ void initTheme().catch((err) => console.error(err));
 
   startParticipantPolling();
   startActiveSpeakerDetection();
+  startLayoutChangeCheck();
   if (globalThis.location.pathname.length > 5 && !globalThis.location.pathname.includes("/_")) {
     injectFloatingButton();
   }

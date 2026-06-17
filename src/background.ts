@@ -1904,6 +1904,97 @@ async function stopAudioCapture(reason = "Stopped") {
   }
 }
 
+async function handleLayoutChangeOrMute(reason: string) {
+  if (!state.isActive || !state.audioActive || !state.targetTabId) {
+    if (DEBUG) {
+      console.log(
+        `[LateMeet] Layout change or track mute ignored (meeting or audio not active). State: active=${state.isActive}, audioActive=${state.audioActive}`,
+      );
+    }
+    return;
+  }
+
+  console.log(`[LateMeet] Stream drop detected (${reason}). Attempting auto-recovery...`);
+
+  try {
+    // Query UI for new stream ID
+    const response = await chrome.runtime
+      .sendMessage({
+        type: "REQUEST_NEW_STREAM_ID",
+        tabId: state.targetTabId,
+      })
+      .catch((err) => {
+        console.warn("[LateMeet] Failed to send REQUEST_NEW_STREAM_ID to UI:", err);
+        return null;
+      });
+
+    if (response?.success && response.streamId) {
+      console.log("[LateMeet] Received new stream ID from UI. Restarting capture...");
+
+      // Stop/close the current offscreen document cleanly
+      await closeOffscreenDocumentIfPresent();
+
+      // Mark audioActive as false to bypass startAudioCapture duplicate check
+      state.audioActive = false;
+
+      await startAudioCapture(
+        state.targetTabId,
+        state.meetingId,
+        state.meetingUrl,
+        response.streamId,
+        true, // includeMicrophone
+      );
+
+      // Broadcast success toasts
+      await chrome.runtime
+        .sendMessage({
+          type: "SHOW_TOAST",
+          text: "Audio capture reconnected successfully",
+          toastType: "success",
+        })
+        .catch(() => {});
+
+      await chrome.tabs
+        .sendMessage(state.targetTabId, {
+          type: "SHOW_PAGE_TOAST",
+          text: "Audio capture reconnected successfully",
+        })
+        .catch(() => {});
+
+      return;
+    }
+  } catch (err) {
+    console.error("[LateMeet] Auto-recovery failed:", err);
+  }
+
+  console.warn(
+    "[LateMeet] Auto-recovery failed or was unavailable. Gracefully stopping capture and alerting user.",
+  );
+
+  // Clean up offscreen and update state to reflect true capture status
+  await closeOffscreenDocumentIfPresent();
+  state.audioActive = false;
+  await broadcastStateUpdate(true);
+
+  // Broadcast error toasts
+  await chrome.runtime
+    .sendMessage({
+      type: "SHOW_TOAST",
+      text: "Audio capture lost due to layout change. Click 'Start Audio' to reconnect.",
+      toastType: "error",
+    })
+    .catch(() => {});
+
+  if (state.targetTabId) {
+    await chrome.tabs
+      .sendMessage(state.targetTabId, {
+        type: "SHOW_PAGE_TOAST",
+        text: "Audio capture lost due to layout change. Click 'Start Audio' in Copilot to reconnect.",
+      })
+      .catch(() => {});
+  }
+}
+
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== "complete" || !tab.url) return;
   await hydrateState();
@@ -2054,7 +2145,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       case "UNEXPECTED_TRACK_END": {
-        await stopAudioCapture(message.reason || "Unexpected track end");
+        if (message.reason && message.reason.includes("muted")) {
+          handleLayoutChangeOrMute(message.reason);
+        } else {
+          await stopAudioCapture(message.reason || "Unexpected track end");
+        }
+        sendResponse({ success: true });
+        return;
+      }
+
+      case "LAYOUT_CHANGED": {
+        handleLayoutChangeOrMute("Layout changed");
         sendResponse({ success: true });
         return;
       }
