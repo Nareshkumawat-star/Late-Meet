@@ -1337,7 +1337,7 @@ async function processQueuedAudioChunk({ id, item }: AudioChunkQueueItem<QueuedA
   }
 
   const prompt = getTranscriptionPrompt();
-  let rawText: string | null = null;
+  let rawText: string | null;
   try {
     rawText = await transcribeChunk(item.audioBase64, item.mimeType, prompt);
   } catch (err) {
