@@ -538,22 +538,7 @@ void initTheme().catch((err) => console.error(err));
 
     toast = document.createElement("div");
     toast.id = toastId;
-    toast.style.position = "fixed";
-    toast.style.bottom = "24px";
-    toast.style.left = "24px";
-    toast.style.backgroundColor = "#1E1E2E";
-    toast.style.color = "#CDD6F4";
-    toast.style.padding = "12px 16px";
-    toast.style.borderRadius = "8px";
-    toast.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-    toast.style.zIndex = "9999";
-    toast.style.fontFamily = "system-ui, sans-serif";
-    toast.style.fontSize = "14px";
-    toast.style.display = "flex";
-    toast.style.alignItems = "center";
-    toast.style.gap = "8px";
-    toast.style.border = "1px solid #f38ba8";
-    toast.style.transition = "opacity 0.3s ease";
+    toast.classList.add("mc-page-toast");
 
     const icon = document.createElement("span");
     icon.textContent = "⚠️";
