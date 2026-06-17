@@ -79,6 +79,7 @@ function installChromeMock(options: MockChromeOptions = {}) {
         if (msg.type === "OFFSCREEN_GET_REMAINING_CHUNKS") {
           return { success: true, pending: 0, isDrainingQueue: false };
         }
+        return undefined;
       },
       getContexts: async () => [],
       onMessage: { addListener: () => {} },
